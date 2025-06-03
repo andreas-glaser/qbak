@@ -1,0 +1,36 @@
+[package]
+name = "qbak"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.71"
+authors = ["Andreas Glaser <andreas.glaser@pm.me>"]
+license = "MIT"
+description = "A single-command backup helper for Linux and POSIX systems"
+homepage = "https://github.com/andreas-glaser/qbak"
+repository = "https://github.com/andreas-glaser/qbak"
+keywords = ["backup", "copy", "timestamp", "cli"]
+categories = ["command-line-utilities", "filesystem"]
+readme = "README.md"
+
+[dependencies]
+clap = { version = ">=4.4, <4.5", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+configparser = "3.0"
+thiserror = "1.0"
+ctrlc = "3.0"
+
+[dev-dependencies]
+tempfile = "3.0"
+
+[features]
+default = []
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1
+panic = "abort"
+
+[[bin]]
+name = "qbak"
+path = "src/main.rs"
