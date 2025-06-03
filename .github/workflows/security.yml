@@ -1,0 +1,279 @@
+name: Security
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    # Run security audit weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Audit dependencies for known vulnerabilities
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run security audit
+        run: cargo audit
+
+      - name: Run audit with JSON output
+        run: cargo audit --json > audit-report.json
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-audit-report
+          path: audit-report.json
+          retention-days: 30
+
+  # Check for deny.toml compliance
+  deny:
+    name: Cargo Deny
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check deny.toml (if exists)
+        run: |
+          if [ -f deny.toml ]; then
+            cargo deny check
+          else
+            echo "No deny.toml found, creating basic configuration..."
+            cat > deny.toml << 'EOF'
+          [graph]
+          targets = [
+              { triple = "x86_64-unknown-linux-gnu" },
+              { triple = "x86_64-pc-windows-msvc" },
+              { triple = "x86_64-apple-darwin" },
+          ]
+
+          [licenses]
+          unlicensed = "deny"
+          confidence-threshold = 0.93
+          allow = [
+              "Apache-2.0",
+              "Apache-2.0 WITH LLVM-exception",
+              "BSD-2-Clause",
+              "BSD-3-Clause",
+              "ISC",
+              "MIT",
+              "Unicode-DFS-2016",
+          ]
+
+          [bans]
+          multiple-versions = "warn"
+          wildcards = "allow"
+          highlight = "all"
+
+          [advisories]
+          vulnerability = "deny"
+          unmaintained = "warn"
+          unsound = "warn"
+          yanked = "deny"
+
+          [sources]
+          unknown-registry = "deny"
+          unknown-git = "deny"
+          allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+          EOF
+            cargo deny check
+          fi
+
+  # Scan for secrets and sensitive information
+  secrets-scan:
+    name: Secrets Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          base: main
+          head: HEAD
+          path: ./
+
+  # License compliance check
+  license-check:
+    name: License Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-license
+        run: cargo install cargo-license --locked
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check licenses
+        run: |
+          echo "# License Report" > license-report.md
+          echo "" >> license-report.md
+          echo "## Project License" >> license-report.md
+          echo "qbak is licensed under: $(grep '^license = ' Cargo.toml | sed 's/license = "\(.*\)"/\1/')" >> license-report.md
+          echo "" >> license-report.md
+          echo "## Dependency Licenses" >> license-report.md
+          cargo license --json | jq -r '.[] | "- \(.name) \(.version): \(.license)"' >> license-report.md
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: license-report.md
+          retention-days: 30
+
+  # SAST (Static Application Security Testing)
+  sast:
+    name: SAST Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-geiger
+        run: cargo install cargo-geiger --locked
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run unsafe code detection
+        run: |
+          echo "# Unsafe Code Analysis" > unsafe-report.md
+          echo "" >> unsafe-report.md
+          echo "Scanning for unsafe Rust code usage..." >> unsafe-report.md
+          echo "" >> unsafe-report.md
+          echo '```' >> unsafe-report.md
+          cargo geiger --format markdown >> unsafe-report.md || true
+          echo '```' >> unsafe-report.md
+
+      - name: Upload unsafe code report
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsafe-code-report
+          path: unsafe-report.md
+          retention-days: 30
+
+  # Supply chain security
+  supply-chain:
+    name: Supply Chain Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-machete
+        run: cargo install cargo-machete --locked
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check for unused dependencies
+        run: cargo machete
+
+      - name: Generate dependency tree
+        run: |
+          cargo tree --format "{p} {l}" > dependency-tree.txt
+          echo "Dependency tree generated with licenses"
+
+      - name: Upload dependency analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-analysis
+          path: dependency-tree.txt
+          retention-days: 30
+
+  # Binary analysis (for release artifacts)
+  binary-analysis:
+    name: Binary Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Install analysis tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binutils file
+
+      - name: Analyze binary
+        run: |
+          echo "# Binary Analysis Report" > binary-analysis.md
+          echo "" >> binary-analysis.md
+          
+          BINARY="target/release/qbak"
+          
+          echo "## File Information" >> binary-analysis.md
+          file "$BINARY" >> binary-analysis.md
+          echo "" >> binary-analysis.md
+          
+          echo "## Binary Size" >> binary-analysis.md
+          ls -lah "$BINARY" | awk '{print $5 " " $9}' >> binary-analysis.md
+          echo "" >> binary-analysis.md
+          
+          echo "## Security Features" >> binary-analysis.md
+          echo "### Symbols" >> binary-analysis.md
+          if nm "$BINARY" >/dev/null 2>&1; then
+            echo "⚠️  Binary contains symbols (not stripped)" >> binary-analysis.md
+          else
+            echo "✅ Binary is stripped" >> binary-analysis.md
+          fi
+          echo "" >> binary-analysis.md
+          
+          echo "### Dependencies" >> binary-analysis.md
+          ldd "$BINARY" >> binary-analysis.md || echo "Static binary (no dynamic dependencies)" >> binary-analysis.md
+
+      - name: Upload binary analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-analysis
+          path: binary-analysis.md
+          retention-days: 30 

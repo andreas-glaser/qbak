@@ -1,0 +1,136 @@
+# Cargo-deny configuration for qbak
+# See https://embarkstudios.github.io/cargo-deny/ for documentation
+
+[graph]
+# The target triples to consider when collecting dependencies
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "x86_64-unknown-linux-musl" },
+    { triple = "x86_64-pc-windows-msvc" },
+    { triple = "x86_64-apple-darwin" },
+    { triple = "aarch64-apple-darwin" },
+]
+
+# The feature set to consider when collecting dependencies
+all-features = false
+no-default-features = false
+
+[licenses]
+# Confidence threshold for detecting a license from a license text.
+# 0.0 = Only accept the license if the text is an exact match
+# 1.0 = Accept the license even if the text is completely different
+confidence-threshold = 0.8
+
+# Any license that isn't in the allow list will cause failure
+unlicensed = "deny"
+
+# Allow these licenses
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+]
+
+# Deny these licenses
+deny = [
+    "GPL-2.0",
+    "GPL-3.0",
+    "AGPL-1.0",
+    "AGPL-3.0",
+    "LGPL-2.0",
+    "LGPL-2.1",
+    "LGPL-3.0",
+    "CC-BY-SA-3.0",
+    "CC-BY-SA-4.0",
+    "SSPL-1.0",
+]
+
+# Lint level for when multiple versions of the same license are detected
+copyleft = "warn"
+
+[bans]
+# Lint level for when multiple versions of the same crate are detected
+multiple-versions = "warn"
+
+# Lint level for when a crate version requirement is `*`
+wildcards = "allow"
+
+# When true, disables the entire wildcards check
+allow-wildcard-paths = false
+
+# The confidence threshold for detecting duplicates
+# 0.0 = Only declare crates as duplicate if they are the exact same version
+# 1.0 = Allow all crates regardless of version
+duplicate-confidence-threshold = 1.0
+
+# When true, each duplicate will be reported
+highlight = "all"
+
+# Specific crates to deny
+deny = [
+    # Examples of problematic crates (none currently for qbak)
+    # { name = "openssl", version = "*" },  # Prefer rustls for pure Rust
+]
+
+# Allowed crates even if they match deny criteria
+allow = [
+    # None currently needed
+]
+
+# Specific crates to skip (not check at all)
+skip = [
+    # None currently needed
+]
+
+# Specific crate versions to skip
+skip-tree = [
+    # None currently needed
+]
+
+[advisories]
+# Database URL - default is the RustSec Advisory Database
+db-url = "https://github.com/rustsec/advisory-db"
+
+# Database path - if set, will use local database
+# db-path = "~/.cargo/advisory-db"
+
+# URL list to fetch advisory database from
+db-urls = ["https://github.com/rustsec/advisory-db"]
+
+# Lint level for security vulnerabilities
+vulnerability = "deny"
+
+# Lint level for unmaintained crates
+unmaintained = "warn"
+
+# Lint level for crates with yanked versions
+yanked = "deny"
+
+# Lint level for crates using unsound code
+unsound = "warn"
+
+# Advisory IDs to ignore (if any specific advisories are causing false positives)
+ignore = [
+    # Example: "RUSTSEC-2020-0001"
+]
+
+[sources]
+# Lint level for unknown registry URLs
+unknown-registry = "deny"
+
+# Lint level for unknown git repository URLs
+unknown-git = "deny"
+
+# Allow these registry URLs
+allow-registry = [
+    "https://github.com/rust-lang/crates.io-index",
+]
+
+# Allow these git repository URLs
+allow-git = [
+    # None currently needed
+] 

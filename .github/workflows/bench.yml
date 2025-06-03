@@ -1,0 +1,242 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Performance benchmarks
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Setup benchmark environment
+        run: |
+          # Create test files of various sizes
+          mkdir -p bench_data
+          
+          # Small files (1KB - 100KB)
+          for size in 1024 10240 102400; do
+            dd if=/dev/urandom of=bench_data/file_${size}.bin bs=1 count=$size 2>/dev/null
+          done
+          
+          # Medium files (1MB - 10MB)  
+          for size in 1048576 10485760; do
+            dd if=/dev/urandom of=bench_data/file_${size}.bin bs=1048576 count=$((size/1048576)) 2>/dev/null
+          done
+          
+          # Large files (50MB - 100MB)
+          for size in 52428800 104857600; do
+            dd if=/dev/urandom of=bench_data/file_${size}.bin bs=1048576 count=$((size/1048576)) 2>/dev/null
+          done
+          
+          # Directory with many files
+          mkdir -p bench_data/many_files
+          for i in {1..100}; do
+            echo "File $i content" > bench_data/many_files/file_$i.txt
+          done
+          
+          # Deep directory structure
+          mkdir -p bench_data/deep/level1/level2/level3/level4/level5
+          echo "Deep file" > bench_data/deep/level1/level2/level3/level4/level5/deep_file.txt
+
+      - name: Run file size benchmarks
+        run: |
+          echo "# Performance Benchmark Report" > benchmark-report.md
+          echo "" >> benchmark-report.md
+          echo "## File Size Performance" >> benchmark-report.md
+          echo "" >> benchmark-report.md
+          echo "| File Size | Time (seconds) | Throughput (MB/s) |" >> benchmark-report.md
+          echo "|-----------|----------------|-------------------|" >> benchmark-report.md
+          
+          for file in bench_data/file_*.bin; do
+            if [ -f "$file" ]; then
+              size=$(stat -c%s "$file")
+              size_mb=$(echo "scale=2; $size / 1048576" | bc -l)
+              
+              # Time the backup operation
+              start_time=$(date +%s.%N)
+              ./target/release/qbak "$file" >/dev/null
+              end_time=$(date +%s.%N)
+              
+              duration=$(echo "$end_time - $start_time" | bc -l)
+              throughput=$(echo "scale=2; $size_mb / $duration" | bc -l)
+              
+              echo "| ${size_mb}MB | ${duration} | ${throughput} |" >> benchmark-report.md
+              
+              # Clean up backup
+              rm -f "${file}"-*-qbak.bin
+            fi
+          done
+
+      - name: Run directory benchmarks
+        run: |
+          echo "" >> benchmark-report.md
+          echo "## Directory Performance" >> benchmark-report.md
+          echo "" >> benchmark-report.md
+          echo "| Test Case | Files | Time (seconds) | Files/sec |" >> benchmark-report.md
+          echo "|-----------|-------|----------------|-----------|" >> benchmark-report.md
+          
+          # Benchmark many files
+          file_count=$(find bench_data/many_files -type f | wc -l)
+          start_time=$(date +%s.%N)
+          ./target/release/qbak bench_data/many_files >/dev/null
+          end_time=$(date +%s.%N)
+          duration=$(echo "$end_time - $start_time" | bc -l)
+          files_per_sec=$(echo "scale=2; $file_count / $duration" | bc -l)
+          echo "| Many files | $file_count | $duration | $files_per_sec |" >> benchmark-report.md
+          rm -rf bench_data/many_files-*-qbak
+          
+          # Benchmark deep structure
+          file_count=$(find bench_data/deep -type f | wc -l)
+          start_time=$(date +%s.%N)
+          ./target/release/qbak bench_data/deep >/dev/null
+          end_time=$(date +%s.%N)
+          duration=$(echo "$end_time - $start_time" | bc -l)
+          files_per_sec=$(echo "scale=2; $file_count / $duration" | bc -l)
+          echo "| Deep structure | $file_count | $duration | $files_per_sec |" >> benchmark-report.md
+          rm -rf bench_data/deep-*-qbak
+
+      - name: Memory usage benchmark
+        run: |
+          echo "" >> benchmark-report.md
+          echo "## Memory Usage" >> benchmark-report.md
+          echo "" >> benchmark-report.md
+          
+          # Monitor memory usage during large file backup
+          large_file="bench_data/file_104857600.bin"
+          /usr/bin/time -v ./target/release/qbak "$large_file" 2>&1 | grep -E "(Maximum resident|Major|Minor|Voluntary)" >> benchmark-report.md || true
+          rm -f "${large_file}"-*-qbak.bin
+
+      - name: Startup time benchmark
+        run: |
+          echo "" >> benchmark-report.md
+          echo "## Startup Performance" >> benchmark-report.md
+          echo "" >> benchmark-report.md
+          
+          # Measure startup time
+          total_time=0
+          runs=10
+          for i in $(seq 1 $runs); do
+            start_time=$(date +%s.%N)
+            ./target/release/qbak --version >/dev/null
+            end_time=$(date +%s.%N)
+            duration=$(echo "$end_time - $start_time" | bc -l)
+            total_time=$(echo "$total_time + $duration" | bc -l)
+          done
+          
+          avg_time=$(echo "scale=4; $total_time / $runs" | bc -l)
+          echo "Average startup time (10 runs): ${avg_time} seconds" >> benchmark-report.md
+
+      - name: Binary size analysis
+        run: |
+          echo "" >> benchmark-report.md
+          echo "## Binary Analysis" >> benchmark-report.md
+          echo "" >> benchmark-report.md
+          
+          binary_size=$(stat -c%s target/release/qbak)
+          binary_size_kb=$(echo "scale=2; $binary_size / 1024" | bc -l)
+          echo "Binary size: ${binary_size_kb} KB" >> benchmark-report.md
+          
+          # Check if stripped
+          if nm target/release/qbak >/dev/null 2>&1; then
+            echo "Binary status: Contains debug symbols" >> benchmark-report.md
+          else
+            echo "Binary status: Stripped (optimized)" >> benchmark-report.md
+          fi
+
+      - name: Upload benchmark report
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: benchmark-report.md
+          retention-days: 30
+
+  # Compare with alternatives (if available)
+  comparison:
+    name: Performance Comparison
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Install comparison tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync
+
+      - name: Setup comparison test
+        run: |
+          # Create test file
+          dd if=/dev/urandom of=test_file.bin bs=1048576 count=10 2>/dev/null
+          
+          echo "# Performance Comparison Report" > comparison-report.md
+          echo "" >> comparison-report.md
+          echo "Comparing qbak with standard tools for copying 10MB file:" >> comparison-report.md
+          echo "" >> comparison-report.md
+
+      - name: Benchmark qbak
+        run: |
+          echo "## qbak Performance" >> comparison-report.md
+          start_time=$(date +%s.%N)
+          ./target/release/qbak test_file.bin >/dev/null
+          end_time=$(date +%s.%N)
+          qbak_time=$(echo "$end_time - $start_time" | bc -l)
+          echo "Time: ${qbak_time} seconds" >> comparison-report.md
+          rm -f test_file-*-qbak.bin
+
+      - name: Benchmark cp
+        run: |
+          echo "" >> comparison-report.md
+          echo "## cp Performance" >> comparison-report.md
+          start_time=$(date +%s.%N)
+          cp test_file.bin test_file_cp_backup.bin
+          end_time=$(date +%s.%N)
+          cp_time=$(echo "$end_time - $start_time" | bc -l)
+          echo "Time: ${cp_time} seconds" >> comparison-report.md
+          rm -f test_file_cp_backup.bin
+
+      - name: Benchmark rsync
+        run: |
+          echo "" >> comparison-report.md
+          echo "## rsync Performance" >> comparison-report.md
+          start_time=$(date +%s.%N)
+          rsync test_file.bin test_file_rsync_backup.bin
+          end_time=$(date +%s.%N)
+          rsync_time=$(echo "$end_time - $start_time" | bc -l)
+          echo "Time: ${rsync_time} seconds" >> comparison-report.md
+          rm -f test_file_rsync_backup.bin
+
+      - name: Upload comparison report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comparison-report
+          path: comparison-report.md
+          retention-days: 30 
