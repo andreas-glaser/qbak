@@ -27,18 +27,42 @@ qbak photos/            → photos-20250603T145232-qbak/
 
 ## Installation
 
+### From GitHub Releases (Recommended)
+
+Download the latest release from [GitHub Releases](https://github.com/andreas-glaser/qbak/releases):
+
+```bash
+# Download the latest release for Linux x86_64
+wget https://github.com/andreas-glaser/qbak/releases/latest/download/qbak-linux-x86_64.tar.gz
+tar -xzf qbak-linux-x86_64.tar.gz
+
+# Install system-wide (requires sudo)
+sudo cp qbak /usr/bin/
+
+# Or install for current user only
+mkdir -p ~/.local/bin
+cp qbak ~/.local/bin/
+```
+
+**Available releases:**
+- `qbak-linux-x86_64.tar.gz` - Linux x86_64 (glibc)
+- `qbak-linux-x86_64-musl.tar.gz` - Linux x86_64 (musl, static binary)
+- `qbak-macos-x86_64.tar.gz` - macOS x86_64 (Intel)
+- `qbak-macos-arm64.tar.gz` - macOS ARM64 (Apple Silicon)
+- `qbak-windows-x86_64.zip` - Windows x86_64
+
 ### From Source
 
 ```bash
 git clone https://github.com/andreas-glaser/qbak.git
 cd qbak
 cargo build --release
-sudo cp target/release/qbak /usr/local/bin/
+sudo cp target/release/qbak /usr/bin/
 ```
 
 ### Prerequisites
 
-- Rust 1.71 or later
+- Rust 1.71 or later (for building from source)
 
 ## Usage
 
