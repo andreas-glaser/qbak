@@ -17,6 +17,12 @@ qbak example.txt        → example-20250603T145231-qbak.txt
 qbak photos/            → photos-20250603T145232-qbak/
 ```
 
+## Why qbak?
+
+Have you ever found yourself editing important files or directories and wanting to create a quick local backup first? You know the routine: `cp myconfig.conf backup-myconfig.conf` or something similar. But then you realize your backup naming lacks consistency—no timestamps, no predictable convention, just ad-hoc names that become meaningless over time.
+
+That's exactly where `qbak` comes in. It's a super simple tool designed for lightning-fast local backups with a consistent, timestamped naming convention. Nothing more, nothing less. Just the backup utility you wish you'd had all along.
+
 ## Features
 
 - **Zero-config** – runs with sensible defaults; no config files required
@@ -42,6 +48,9 @@ sudo cp qbak /usr/bin/
 # Or install for current user only
 mkdir -p ~/.local/bin
 cp qbak ~/.local/bin/
+
+# Check if it is installed correctly
+qbak --version
 ```
 
 **Available releases:**
