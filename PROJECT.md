@@ -1,6 +1,6 @@
 # Quick Backup — qbak
 
-Version: 1.0  (2025-01-17)
+Version: 1.0  (2025-06-03)
 
 ## Summary
 
