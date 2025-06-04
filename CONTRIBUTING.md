@@ -246,8 +246,8 @@ qbak follows [Semantic Versioning](https://semver.org/):
 
 1. Update version in `Cargo.toml`
 2. Update `CHANGELOG.md`
-3. Create git tag: `git tag v0.1.0`
-4. Push tag: `git push origin v0.1.0`
+3. Create git tag: `git tag v1.0.0`
+4. Push tag: `git push origin v1.0.0`
 5. GitHub Actions will automatically create release
 
 ## Communication

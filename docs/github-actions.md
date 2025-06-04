@@ -76,7 +76,7 @@ The qbak project uses 5 main GitHub Actions workflows:
 
 **Purpose**: Automated release management
 
-**Triggered by**: Git tags matching `v*` (e.g., `v0.1.0`)
+**Triggered by**: Git tags matching `v*` (e.g., `v1.0.0`)
 
 **Jobs**:
 - **Create-release**: Generate GitHub release with changelog
@@ -206,8 +206,8 @@ For full functionality, set these GitHub repository secrets:
 2. **Merge** PR to main
 3. **Create** release tag when ready:
    ```bash
-   git tag v0.1.1
-   git push origin v0.1.1
+   git tag v1.0.1
+   git push origin v1.0.1
    ```
 4. **Monitor** release workflow completion
 

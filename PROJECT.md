@@ -1,6 +1,6 @@
 # Quick Backup — qbak
 
-Version: 0.1  (2025-06-03)
+Version: 1.0  (2025-01-17)
 
 ## Summary
 
@@ -261,7 +261,7 @@ qbak --dry-run photos/
 * **Progress indication**: Show progress for directories with >100 files or operations >2s
 * **Parallel processing**: Sequential processing for simplicity and safety
 * **Large files**: Handle files up to available disk space; no arbitrary size limits
-* **Checksums**: No integrity verification in v0.1 (keep it simple)
+* **Checksums**: No integrity verification in v1.0 (keep it simple)
 
 ## Limitations & Scope
 
