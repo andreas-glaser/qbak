@@ -231,6 +231,8 @@ Andreas Glaser <andreas.glaser@pm.me>
 
 Contributions welcome! Please feel free to submit issues and pull requests.
 
+**Development Branch**: Active development happens on the `dev` branch. Please submit pull requests against `dev` rather than `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and version history. 

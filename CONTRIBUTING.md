@@ -11,6 +11,39 @@ Thank you for your interest in contributing to qbak! This document provides guid
 5. **Test** your changes thoroughly
 6. **Submit** a pull request
 
+## Git Workflow
+
+### Branch Strategy
+
+**Main Branches:**
+- **`main`** - Stable release branch, contains only released versions
+- **`dev`** - Development branch, active development happens here
+
+**Development Process:**
+1. **Fork** the repository
+2. **Create feature branch** from `dev`: `git checkout dev && git checkout -b feature/my-feature`
+3. **Develop and test** your changes
+4. **Submit PR** against the `dev` branch
+5. **Maintainers merge** to `dev` after review
+6. **Periodic releases** merge `dev` → `main` with version tags
+
+**Branch Usage:**
+```bash
+# Start new feature from dev
+git checkout dev
+git pull origin dev
+git checkout -b feature/awesome-feature
+
+# Submit PR against dev branch (not main)
+# After merge, feature branches are deleted
+
+# Releases: dev → main + tag
+git checkout main
+git merge dev
+git tag v1.1.0
+git push origin main v1.1.0
+```
+
 ## Development Environment
 
 ### Prerequisites
