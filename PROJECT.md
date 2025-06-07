@@ -1,6 +1,6 @@
 # Quick Backup — qbak
 
-Version: 1.1.0  (2025-06-07)
+Version: 1.2.0  (in development)
 
 ## Summary
 
@@ -421,7 +421,6 @@ pub struct Config {
     pub preserve_permissions: bool,
     pub follow_symlinks: bool,
     pub include_hidden: bool,
-
 }
 
 #[derive(Debug)]

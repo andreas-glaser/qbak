@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.0] - TBD
+## [1.2.0] - TBD
+
+### Added
+- (Features to be added in 1.2.0)
+
+### Changed
+- Development version bump to 1.2.0
+
+## [1.1.0] - 2025-06-07
 
 ### Added
 - `--dump-config` flag to display current configuration settings and their source
@@ -26,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Progress indication now always shows when `--verbose` is used (removed `progress_threshold` config entirely)
 - Increased `max_filename_length` from 200 to 255 characters to match standard filesystem limits
-- Development version bump to 1.1.0
 
 ## [1.0.0] - 2025-01-17
 
@@ -86,7 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Atomic file operations prevent corruption
 - Signal handling for graceful cleanup on interruption
 
-[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/andreas-glaser/qbak/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/andreas-glaser/qbak/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/andreas-glaser/qbak/releases/tag/v1.0.0
 [0.1.0]: https://github.com/andreas-glaser/qbak/releases/tag/v0.1.0 
