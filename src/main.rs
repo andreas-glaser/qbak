@@ -96,7 +96,9 @@ fn run() -> Result<i32, QbakError> {
     let targets: Vec<&str> = if let Some(target_values) = matches.get_many::<String>("targets") {
         target_values.map(|s| s.as_str()).collect()
     } else {
-        return Err(QbakError::validation("No targets specified. Use --help for usage information."));
+        return Err(QbakError::validation(
+            "No targets specified. Use --help for usage information.",
+        ));
     };
 
     // Set up signal handling for graceful cleanup

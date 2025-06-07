@@ -107,16 +107,22 @@ pub fn backup_directory(source: &Path, config: &Config, verbose: bool) -> Result
 
     // Copy directory contents
     let mut result = BackupResult::new(source.to_path_buf(), final_backup_path.clone());
-    
+
     // Check if we should show progress
     let total_files = count_files_recursive(source, config)?;
     let show_progress = verbose;
-    
+
     if show_progress {
         println!("Backing up directory with {} files...", total_files);
     }
-    
-    copy_directory_contents(source, &final_backup_path, config, &mut result, show_progress)?;
+
+    copy_directory_contents(
+        source,
+        &final_backup_path,
+        config,
+        &mut result,
+        show_progress,
+    )?;
 
     // Set directory permissions if configured
     if config.preserve_permissions {
@@ -125,7 +131,10 @@ pub fn backup_directory(source: &Path, config: &Config, verbose: bool) -> Result
     }
 
     if show_progress {
-        println!("Directory backup completed: {} files processed", result.files_processed);
+        println!(
+            "Directory backup completed: {} files processed",
+            result.files_processed
+        );
     }
 
     result.duration = start_time.elapsed();
@@ -156,7 +165,7 @@ fn copy_directory_contents(
         if metadata.is_file() {
             // Copy file
             copy_file_to_backup(&source_path, &backup_path, config, result)?;
-            
+
             // Show progress if enabled
             if show_progress && result.files_processed % 10 == 0 {
                 eprint!(".");
@@ -281,22 +290,22 @@ fn create_temp_backup_path(backup_path: &Path) -> Result<PathBuf> {
 /// Count the total number of files in a directory recursively
 fn count_files_recursive(dir: &Path, config: &Config) -> Result<usize> {
     let mut count = 0;
-    
+
     if !dir.is_dir() {
         return Ok(1); // Single file
     }
-    
+
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
-        
+
         // Skip hidden files if not configured to include them
         if !config.include_hidden && is_hidden(&path) {
             continue;
         }
-        
+
         let metadata = entry.metadata()?;
-        
+
         if metadata.is_file() {
             count += 1;
         } else if metadata.is_dir() {
@@ -309,7 +318,7 @@ fn count_files_recursive(dir: &Path, config: &Config) -> Result<usize> {
             } else {
                 path.parent().unwrap_or(Path::new(".")).join(target)
             };
-            
+
             if resolved_target.exists() {
                 let target_metadata = fs::metadata(&resolved_target)?;
                 if target_metadata.is_file() {
@@ -320,7 +329,7 @@ fn count_files_recursive(dir: &Path, config: &Config) -> Result<usize> {
             }
         }
     }
-    
+
     Ok(count)
 }
 
@@ -719,7 +728,7 @@ mod tests {
         // Create test structure
         File::create(source_dir.join("file1.txt")).unwrap();
         File::create(source_dir.join("file2.txt")).unwrap();
-        
+
         let subdir = source_dir.join("subdir");
         fs::create_dir_all(&subdir).unwrap();
         File::create(subdir.join("file3.txt")).unwrap();
@@ -767,19 +776,19 @@ mod tests {
     fn test_progress_with_verbose_flag() {
         let temp_dir = tempfile::tempdir().unwrap();
         let source = temp_dir.path().join("source");
-        
+
         std::fs::create_dir(&source).unwrap();
         std::fs::write(source.join("file1.txt"), "content1").unwrap();
         std::fs::write(source.join("file2.txt"), "content2").unwrap();
         std::fs::write(source.join("file3.txt"), "content3").unwrap();
-        
+
         let config = Config::default();
-        
+
         // Test with verbose=true - should always show progress
         let result = backup_directory(&source, &config, true);
         assert!(result.is_ok());
-        
-        // Test with verbose=false - should never show progress  
+
+        // Test with verbose=false - should never show progress
         let result2 = backup_directory(&source, &config, false);
         assert!(result2.is_ok());
     }
