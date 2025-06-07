@@ -139,6 +139,53 @@ progress_threshold = 100
     .to_string()
 }
 
+/// Display the current configuration in a user-friendly format
+pub fn dump_config(config: &Config) -> Result<()> {
+    let config_path = get_config_path()?;
+    
+    println!("qbak Configuration");
+    println!("==================");
+    println!();
+    
+    // Show config file path and status
+    if config_path.exists() {
+        println!("Config file: {} (found)", config_path.display());
+    } else {
+        println!("Config file: {} (not found, using defaults)", config_path.display());
+    }
+    println!();
+    
+    // Show current settings
+    println!("Current Settings:");
+    println!("----------------");
+    println!("timestamp_format     = {}", config.timestamp_format);
+    println!("backup_suffix        = {}", config.backup_suffix);
+    println!("preserve_permissions = {}", config.preserve_permissions);
+    println!("follow_symlinks      = {}", config.follow_symlinks);
+    println!("include_hidden       = {}", config.include_hidden);
+    println!("progress_threshold   = {}", config.progress_threshold);
+    println!("max_filename_length  = {}", config.max_filename_length);
+    println!();
+    
+    // Show example usage
+    println!("Example backup names with current settings:");
+    println!("------------------------------------------");
+    println!("example.txt → example-{}-{}.txt", "YYYYMMDDTHHMMSS", config.backup_suffix);
+    println!("data.tar.gz → data.tar-{}-{}.gz", "YYYYMMDDTHHMMSS", config.backup_suffix);
+    println!("no-ext → no-ext-{}-{}", "YYYYMMDDTHHMMSS", config.backup_suffix);
+    println!();
+    
+    if !config_path.exists() {
+        println!("To create a configuration file:");
+        println!("------------------------------");
+        println!("1. Create directory: mkdir -p {}", config_path.parent().unwrap().display());
+        println!("2. Create config file with your preferred settings");
+        println!("3. Use 'qbak --dump-config' again to verify");
+    }
+    
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -741,6 +788,14 @@ some_key = some_value
                 std::env::remove_var("HOME");
             }
         }
+    }
+
+    #[test]
+    fn test_dump_config() {
+        let config = default_config();
+        let result = dump_config(&config);
+        // Should not fail - actual output verification would require capturing stdout
+        assert!(result.is_ok());
     }
 
     #[test]

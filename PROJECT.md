@@ -1,6 +1,6 @@
 # Quick Backup — qbak
 
-Version: 1.0  (2025-06-03)
+Version: 1.1.0  (2025-06-07)
 
 ## Summary
 
@@ -137,11 +137,12 @@ ARGUMENTS:
   <TARGET>...    Files or directories to back up
 
 OPTIONS:
-  -n, --dry-run     Show what would be backed up without doing it
-  -v, --verbose     Show detailed progress information  
-  -q, --quiet       Suppress all output except errors
-  -h, --help        Show help information
-  -V, --version     Show version information
+  -n, --dry-run        Show what would be backed up without doing it
+  -v, --verbose        Show detailed progress information  
+  -q, --quiet          Suppress all output except errors
+      --dump-config    Display current configuration settings and exit
+  -h, --help           Show help information
+  -V, --version        Show version information
 ```
 
 **Exit Codes (POSIX Standard):**

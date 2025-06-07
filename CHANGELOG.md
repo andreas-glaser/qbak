@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - TBD
+
+### Added
+- `--dump-config` flag to display current configuration settings and their source
+  - Shows config file path and whether it exists
+  - Displays all current settings with their values
+  - Provides examples of backup names with current settings
+  - Includes instructions for creating config file if none exists
+
+### Changed
+- Development version bump to 1.1.0
+
 ## [1.0.0] - 2025-01-17
 
 ### Added
@@ -65,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Atomic file operations prevent corruption
 - Signal handling for graceful cleanup on interruption
 
-[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/andreas-glaser/qbak/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/andreas-glaser/qbak/releases/tag/v1.0.0
 [0.1.0]: https://github.com/andreas-glaser/qbak/releases/tag/v0.1.0 

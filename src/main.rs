@@ -1,5 +1,5 @@
 use clap::{Arg, ArgAction, Command};
-use qbak::{backup_directory, backup_file, load_config, QbakError};
+use qbak::{backup_directory, backup_file, dump_config, load_config, QbakError};
 use std::path::Path;
 use std::process;
 
@@ -26,7 +26,7 @@ fn main() {
 
 fn run() -> Result<i32, QbakError> {
     let matches = Command::new("qbak")
-        .version("1.0.0")
+        .version("1.1.0")
         .author("Andreas Glaser <andreas.glaser@pm.me>")
         .about("A single-command backup helper for Linux and POSIX systems")
         .long_about(
@@ -36,7 +36,7 @@ fn run() -> Result<i32, QbakError> {
         .arg(
             Arg::new("targets")
                 .help("Files or directories to back up")
-                .required(true)
+                .required(false)
                 .num_args(1..)
                 .value_name("TARGET"),
         )
@@ -62,14 +62,16 @@ fn run() -> Result<i32, QbakError> {
                 .action(ArgAction::SetTrue)
                 .conflicts_with("verbose"),
         )
+        .arg(
+            Arg::new("dump-config")
+                .long("dump-config")
+                .help("Display current configuration settings and exit")
+                .action(ArgAction::SetTrue),
+        )
         .get_matches();
 
     // Parse command line flags
-    let targets: Vec<&str> = matches
-        .get_many::<String>("targets")
-        .unwrap()
-        .map(|s| s.as_str())
-        .collect();
+    let dump_config_flag = matches.get_flag("dump-config");
     let dry_run = matches.get_flag("dry-run");
     let verbose = matches.get_flag("verbose");
     let quiet = matches.get_flag("quiet");
@@ -83,6 +85,19 @@ fn run() -> Result<i32, QbakError> {
             e
         })
         .unwrap_or_else(|_| qbak::default_config());
+
+    // Handle dump-config flag early
+    if dump_config_flag {
+        dump_config(&config)?;
+        return Ok(0);
+    }
+
+    // Parse targets (only needed if not dumping config)
+    let targets: Vec<&str> = if let Some(target_values) = matches.get_many::<String>("targets") {
+        target_values.map(|s| s.as_str()).collect()
+    } else {
+        return Err(QbakError::validation("No targets specified. Use --help for usage information."));
+    };
 
     // Set up signal handling for graceful cleanup
     setup_signal_handlers();

@@ -94,17 +94,18 @@ qbak docs/ src/ tests/
 ### Command Line Options
 
 ```bash
-qbak [OPTIONS] <TARGET>...
+qbak [OPTIONS] [TARGET]...
 
 Arguments:
-  <TARGET>...  Files or directories to back up
+  [TARGET]...      Files or directories to back up
 
 Options:
-  -n, --dry-run    Show what would be backed up without doing it
-  -v, --verbose    Show detailed progress information
-  -q, --quiet      Suppress all output except errors
-  -h, --help       Print help
-  -V, --version    Print version
+  -n, --dry-run        Show what would be backed up without doing it
+  -v, --verbose        Show detailed progress information
+  -q, --quiet          Suppress all output except errors
+      --dump-config    Display current configuration settings and exit
+  -h, --help           Print help
+  -V, --version        Print version
 ```
 
 ### Examples
@@ -125,6 +126,10 @@ qbak --verbose my-project/
 
 # Quiet mode (only errors)
 qbak --quiet *.txt
+
+# Check current configuration
+qbak --dump-config
+# Output: Shows config file location, all settings, and example backup names
 ```
 
 ## Naming Scheme
