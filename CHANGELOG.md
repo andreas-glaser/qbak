@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.0] - TBD
+## [1.1.0] - 2025-06-07
 
 ### Added
 - `--dump-config` flag to display current configuration settings and their source
@@ -26,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Progress indication now always shows when `--verbose` is used (removed `progress_threshold` config entirely)
 - Increased `max_filename_length` from 200 to 255 characters to match standard filesystem limits
-- Development version bump to 1.1.0
 
 ## [1.0.0] - 2025-01-17
 
