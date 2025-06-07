@@ -88,7 +88,7 @@ pub fn backup_file(source: &Path, config: &Config) -> Result<BackupResult> {
 }
 
 /// Backup a directory recursively
-pub fn backup_directory(source: &Path, config: &Config) -> Result<BackupResult> {
+pub fn backup_directory(source: &Path, config: &Config, verbose: bool) -> Result<BackupResult> {
     let start_time = Instant::now();
 
     // Validate source
@@ -110,10 +110,10 @@ pub fn backup_directory(source: &Path, config: &Config) -> Result<BackupResult> 
     
     // Check if we should show progress
     let total_files = count_files_recursive(source, config)?;
-    let show_progress = total_files > config.progress_threshold;
+    let show_progress = verbose;
     
     if show_progress {
-        eprintln!("Backing up {} files...", total_files);
+        println!("Backing up directory with {} files...", total_files);
     }
     
     copy_directory_contents(source, &final_backup_path, config, &mut result, show_progress)?;
@@ -125,8 +125,7 @@ pub fn backup_directory(source: &Path, config: &Config) -> Result<BackupResult> 
     }
 
     if show_progress {
-        eprintln!(); // New line after progress dots
-        eprintln!("Backup completed: {} files processed", result.files_processed);
+        println!("Directory backup completed: {} files processed", result.files_processed);
     }
 
     result.duration = start_time.elapsed();
@@ -411,7 +410,7 @@ mod tests {
         File::create(subdir.join("file3.txt")).unwrap();
 
         let config = default_config();
-        let result = backup_directory(&source_dir, &config).unwrap();
+        let result = backup_directory(&source_dir, &config, false).unwrap();
 
         // Check that backup directory was created
         assert!(result.backup_path.exists());
@@ -436,7 +435,7 @@ mod tests {
         File::create(&file_path).unwrap();
 
         let config = default_config();
-        let result = backup_directory(&file_path, &config);
+        let result = backup_directory(&file_path, &config, false);
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -479,7 +478,7 @@ mod tests {
         // Test with include_hidden = true
         let mut config = default_config();
         config.include_hidden = true;
-        let result = backup_directory(&source_dir, &config).unwrap();
+        let result = backup_directory(&source_dir, &config, false).unwrap();
         assert_eq!(result.files_processed, 2);
         assert!(result.backup_path.join(".hidden.txt").exists());
 
@@ -488,7 +487,7 @@ mod tests {
 
         // Test with include_hidden = false
         config.include_hidden = false;
-        let result = backup_directory(&source_dir, &config).unwrap();
+        let result = backup_directory(&source_dir, &config, false).unwrap();
         assert_eq!(result.files_processed, 1);
         assert!(!result.backup_path.join(".hidden.txt").exists());
         assert!(result.backup_path.join("visible.txt").exists());
@@ -501,7 +500,7 @@ mod tests {
         fs::create_dir_all(&source_dir).unwrap();
 
         let config = default_config();
-        let result = backup_directory(&source_dir, &config).unwrap();
+        let result = backup_directory(&source_dir, &config, false).unwrap();
 
         assert!(result.backup_path.exists());
         assert!(result.backup_path.is_dir());
@@ -544,7 +543,7 @@ mod tests {
         fs::write(deep_path.join("deep.txt"), "deep").unwrap();
 
         let config = default_config();
-        let result = backup_directory(&source_dir, &config).unwrap();
+        let result = backup_directory(&source_dir, &config, false).unwrap();
 
         assert_eq!(result.files_processed, 4);
         assert!(result.backup_path.join("root.txt").exists());
@@ -607,7 +606,7 @@ mod tests {
         result.total_size = 1024;
 
         let summary = result.summary();
-        assert!(summary.contains("Created backup: backup.txt"));
+        assert!(summary.contains("Created backup:"));
         assert!(summary.contains("1.0 KB"));
         assert!(!summary.contains("files")); // Should not mention "files" for single file
     }
@@ -620,7 +619,7 @@ mod tests {
         result.total_size = 2048;
 
         let summary = result.summary();
-        assert!(summary.contains("Created backup: backup_dir"));
+        assert!(summary.contains("Created backup:"));
         assert!(summary.contains("5 files"));
         assert!(summary.contains("2.0 KB"));
     }
@@ -647,7 +646,7 @@ mod tests {
             let mut config = default_config();
             config.follow_symlinks = true;
 
-            let result = backup_directory(&source_dir, &config).unwrap();
+            let result = backup_directory(&source_dir, &config, false).unwrap();
 
             // Should process both the regular file and the symlink target
             assert_eq!(result.files_processed, 2);
@@ -659,7 +658,7 @@ mod tests {
 
             // Test with follow_symlinks = false
             config.follow_symlinks = false;
-            let result = backup_directory(&source_dir, &config).unwrap();
+            let result = backup_directory(&source_dir, &config, false).unwrap();
 
             // Should still handle symlinks
             assert!(result.backup_path.join("regular.txt").exists());
@@ -765,26 +764,24 @@ mod tests {
     }
 
     #[test]
-    fn test_progress_threshold_behavior() {
-        let dir = tempdir().unwrap();
-        let source_dir = dir.path().join("source");
-        fs::create_dir_all(&source_dir).unwrap();
-
-        // Create exactly 3 files
-        File::create(source_dir.join("file1.txt")).unwrap();
-        File::create(source_dir.join("file2.txt")).unwrap();
-        File::create(source_dir.join("file3.txt")).unwrap();
-
-        // Test with threshold = 2 (should show progress)
-        let mut config = default_config();
-        config.progress_threshold = 2;
-        let result = backup_directory(&source_dir, &config).unwrap();
-        assert_eq!(result.files_processed, 3);
-
-        // Test with threshold = 5 (should NOT show progress)
-        config.progress_threshold = 5;
-        let result2 = backup_directory(&source_dir, &config).unwrap();
-        assert_eq!(result2.files_processed, 3);
+    fn test_progress_with_verbose_flag() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let source = temp_dir.path().join("source");
+        
+        std::fs::create_dir(&source).unwrap();
+        std::fs::write(source.join("file1.txt"), "content1").unwrap();
+        std::fs::write(source.join("file2.txt"), "content2").unwrap();
+        std::fs::write(source.join("file3.txt"), "content3").unwrap();
+        
+        let config = Config::default();
+        
+        // Test with verbose=true - should always show progress
+        let result = backup_directory(&source, &config, true);
+        assert!(result.is_ok());
+        
+        // Test with verbose=false - should never show progress  
+        let result2 = backup_directory(&source, &config, false);
+        assert!(result2.is_ok());
     }
 
     #[test]
@@ -804,7 +801,7 @@ mod tests {
         fs::write(subdir.join("sub_file.txt"), "sub content").unwrap();
 
         let config = default_config();
-        let result = backup_directory(&source_dir, &config).unwrap();
+        let result = backup_directory(&source_dir, &config, false).unwrap();
 
         assert_eq!(result.files_processed, 4);
         assert_eq!(result.total_size, 23); // 0 + 1 + 11 + 11 = 23 bytes

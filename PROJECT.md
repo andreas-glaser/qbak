@@ -300,10 +300,7 @@ follow_symlinks = true
 include_hidden = true
 
 # Maximum filename length before truncation
-max_filename_length = 200
-
-# Show progress for operations with more than N files
-progress_threshold = 100
+max_filename_length = 255
 ```
 
 **Cross-platform compatibility:**
@@ -424,7 +421,7 @@ pub struct Config {
     pub preserve_permissions: bool,
     pub follow_symlinks: bool,
     pub include_hidden: bool,
-    pub progress_threshold: usize,
+
 }
 
 #[derive(Debug)]

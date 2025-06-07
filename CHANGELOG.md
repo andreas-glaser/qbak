@@ -18,12 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Progress indication now works as intended for directory backups
-  - Shows "Backing up X files..." message at start
+  - Only shows when `--verbose` flag is used (respects user intent)
+  - Improved messaging: "Backing up directory with X files..." (clearer wording)
   - Displays progress dots during backup (every 10th file)
-  - Shows "Backup completed: X files processed" at end
-  - Only triggered when file count exceeds `progress_threshold` setting
+  - Shows "Directory backup completed: X files processed" at end
 
 ### Changed
+- Progress indication now always shows when `--verbose` is used (removed `progress_threshold` config entirely)
+- Increased `max_filename_length` from 200 to 255 characters to match standard filesystem limits
 - Development version bump to 1.1.0
 
 ## [1.0.0] - 2025-01-17

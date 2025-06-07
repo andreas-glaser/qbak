@@ -169,11 +169,8 @@ follow_symlinks = true
 # Include hidden files when backing up directories  
 include_hidden = true
 
-# Maximum filename length before showing error
-max_filename_length = 200
-
-# Show progress for operations with more than N files
-progress_threshold = 100
+# Maximum filename length before showing error (filesystem limit: 255)
+max_filename_length = 255
 ```
 
 ## Safety Features

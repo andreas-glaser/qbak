@@ -10,20 +10,18 @@ pub struct Config {
     pub preserve_permissions: bool,
     pub follow_symlinks: bool,
     pub include_hidden: bool,
-    pub progress_threshold: usize,
     pub max_filename_length: usize,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Self {
+        Config {
             timestamp_format: "YYYYMMDDTHHMMSS".to_string(),
             backup_suffix: "qbak".to_string(),
             preserve_permissions: true,
             follow_symlinks: true,
             include_hidden: true,
-            progress_threshold: 100,
-            max_filename_length: 200,
+            max_filename_length: 255,
         }
     }
 }
@@ -67,11 +65,6 @@ pub fn load_config() -> Result<Config> {
     }
 
     // Load numeric values
-    if let Some(value) = conf.get("qbak", "progress_threshold") {
-        config.progress_threshold = value
-            .parse()
-            .map_err(|_| QbakError::config(format!("Invalid progress_threshold: {}", value)))?;
-    }
     if let Some(value) = conf.get("qbak", "max_filename_length") {
         config.max_filename_length = value
             .parse()
@@ -131,10 +124,7 @@ follow_symlinks = true
 include_hidden = true
 
 # Maximum filename length before showing error
-max_filename_length = 200
-
-# Show progress for operations with more than N files
-progress_threshold = 100
+max_filename_length = 255
 "#
     .to_string()
 }
@@ -163,7 +153,6 @@ pub fn dump_config(config: &Config) -> Result<()> {
     println!("preserve_permissions = {}", config.preserve_permissions);
     println!("follow_symlinks      = {}", config.follow_symlinks);
     println!("include_hidden       = {}", config.include_hidden);
-    println!("progress_threshold   = {}", config.progress_threshold);
     println!("max_filename_length  = {}", config.max_filename_length);
     println!();
     
@@ -204,8 +193,7 @@ mod tests {
         assert!(config.preserve_permissions);
         assert!(config.follow_symlinks);
         assert!(config.include_hidden);
-        assert_eq!(config.progress_threshold, 100);
-        assert_eq!(config.max_filename_length, 200);
+        assert_eq!(config.max_filename_length, 255);
     }
 
     #[test]
@@ -303,7 +291,6 @@ backup_suffix = test-suffix
 preserve_permissions = false
 follow_symlinks = false
 include_hidden = false
-progress_threshold = 50
 max_filename_length = 100
 "#;
         fs::write(&config_path, config_content).unwrap();
@@ -324,7 +311,6 @@ max_filename_length = 100
         assert!(!config.preserve_permissions);
         assert!(!config.follow_symlinks);
         assert!(!config.include_hidden);
-        assert_eq!(config.progress_threshold, 50);
         assert_eq!(config.max_filename_length, 100);
 
         // Restore original environment
@@ -372,7 +358,6 @@ max_filename_length = 100
         // Create a config file with only some values
         let config_content = r#"[qbak]
 backup_suffix = custom
-progress_threshold = 75
 "#;
         fs::write(&config_path, config_content).unwrap();
 
@@ -390,11 +375,12 @@ progress_threshold = 75
 
         // Overridden values
         assert_eq!(config.backup_suffix, "custom");
-        assert_eq!(config.progress_threshold, 75);
 
         // Default values should remain
         assert_eq!(config.timestamp_format, default.timestamp_format);
         assert_eq!(config.preserve_permissions, default.preserve_permissions);
+        assert_eq!(config.follow_symlinks, default.follow_symlinks);
+        assert_eq!(config.include_hidden, default.include_hidden);
         assert_eq!(config.max_filename_length, default.max_filename_length);
 
         // Restore original environment
@@ -505,8 +491,7 @@ include_hidden = not_a_boolean
         let config_path = config_dir.join("config.ini");
 
         let config_content = r#"[qbak]
-progress_threshold = not_a_number
-max_filename_length = also_invalid
+max_filename_length = not_a_number
 "#;
         fs::write(&config_path, config_content).unwrap();
 
@@ -625,7 +610,7 @@ max_filename_length = also_invalid
         assert!(sample.contains("follow_symlinks"));
         assert!(sample.contains("include_hidden"));
         assert!(sample.contains("max_filename_length"));
-        assert!(sample.contains("progress_threshold"));
+        println!("{}", sample);
 
         // Verify it's valid INI by parsing it
         let dir = tempdir().unwrap();
@@ -677,6 +662,9 @@ some_key = some_value
         assert_eq!(config.timestamp_format, default.timestamp_format);
         assert_eq!(config.backup_suffix, default.backup_suffix);
         assert_eq!(config.preserve_permissions, default.preserve_permissions);
+        assert_eq!(config.follow_symlinks, default.follow_symlinks);
+        assert_eq!(config.include_hidden, default.include_hidden);
+        assert_eq!(config.max_filename_length, default.max_filename_length);
 
         // Restore original environment
         #[cfg(not(target_os = "windows"))]

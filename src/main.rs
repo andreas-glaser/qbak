@@ -174,7 +174,7 @@ fn process_target(
 
     // Perform the actual backup
     let result = if target.is_dir() {
-        backup_directory(target, config)?
+        backup_directory(target, config, verbose)?
     } else {
         backup_file(target, config)?
     };
