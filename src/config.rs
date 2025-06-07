@@ -163,16 +163,16 @@ pub fn dump_config(config: &Config) -> Result<()> {
     println!("Example backup names with current settings:");
     println!("------------------------------------------");
     println!(
-        "example.txt → example-{}-{}.txt",
-        "YYYYMMDDTHHMMSS", config.backup_suffix
+        "example.txt → example-YYYYMMDDTHHMMSS-{}.txt",
+        config.backup_suffix
     );
     println!(
-        "data.tar.gz → data.tar-{}-{}.gz",
-        "YYYYMMDDTHHMMSS", config.backup_suffix
+        "data.tar.gz → data.tar-YYYYMMDDTHHMMSS-{}.gz",
+        config.backup_suffix
     );
     println!(
-        "no-ext → no-ext-{}-{}",
-        "YYYYMMDDTHHMMSS", config.backup_suffix
+        "no-ext → no-ext-YYYYMMDDTHHMMSS-{}",
+        config.backup_suffix
     );
     println!();
 
