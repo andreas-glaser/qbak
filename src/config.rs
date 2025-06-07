@@ -170,10 +170,7 @@ pub fn dump_config(config: &Config) -> Result<()> {
         "data.tar.gz → data.tar-YYYYMMDDTHHMMSS-{}.gz",
         config.backup_suffix
     );
-    println!(
-        "no-ext → no-ext-YYYYMMDDTHHMMSS-{}",
-        config.backup_suffix
-    );
+    println!("no-ext → no-ext-YYYYMMDDTHHMMSS-{}", config.backup_suffix);
     println!();
 
     if !config_path.exists() {
