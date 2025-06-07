@@ -107,12 +107,26 @@ pub fn backup_directory(source: &Path, config: &Config) -> Result<BackupResult> 
 
     // Copy directory contents
     let mut result = BackupResult::new(source.to_path_buf(), final_backup_path.clone());
-    copy_directory_contents(source, &final_backup_path, config, &mut result)?;
+    
+    // Check if we should show progress
+    let total_files = count_files_recursive(source, config)?;
+    let show_progress = total_files > config.progress_threshold;
+    
+    if show_progress {
+        eprintln!("Backing up {} files...", total_files);
+    }
+    
+    copy_directory_contents(source, &final_backup_path, config, &mut result, show_progress)?;
 
     // Set directory permissions if configured
     if config.preserve_permissions {
         copy_permissions(source, &final_backup_path)?;
         copy_timestamps(source, &final_backup_path)?;
+    }
+
+    if show_progress {
+        eprintln!(); // New line after progress dots
+        eprintln!("Backup completed: {} files processed", result.files_processed);
     }
 
     result.duration = start_time.elapsed();
@@ -125,6 +139,7 @@ fn copy_directory_contents(
     backup_dir: &Path,
     config: &Config,
     result: &mut BackupResult,
+    show_progress: bool,
 ) -> Result<()> {
     for entry in fs::read_dir(source_dir)? {
         let entry = entry?;
@@ -142,10 +157,17 @@ fn copy_directory_contents(
         if metadata.is_file() {
             // Copy file
             copy_file_to_backup(&source_path, &backup_path, config, result)?;
+            
+            // Show progress if enabled
+            if show_progress && result.files_processed % 10 == 0 {
+                eprint!(".");
+                use std::io::{self, Write};
+                io::stderr().flush().unwrap_or(());
+            }
         } else if metadata.is_dir() {
             // Create directory and recurse
             fs::create_dir_all(&backup_path)?;
-            copy_directory_contents(&source_path, &backup_path, config, result)?;
+            copy_directory_contents(&source_path, &backup_path, config, result, show_progress)?;
 
             // Set directory permissions
             if config.preserve_permissions {
@@ -154,7 +176,7 @@ fn copy_directory_contents(
             }
         } else if metadata.is_symlink() {
             // Handle symlinks
-            handle_symlink(&source_path, &backup_path, config, result)?;
+            handle_symlink(&source_path, &backup_path, config, result, show_progress)?;
         }
     }
 
@@ -197,6 +219,7 @@ fn handle_symlink(
     backup: &Path,
     config: &Config,
     result: &mut BackupResult,
+    show_progress: bool,
 ) -> Result<()> {
     if config.follow_symlinks {
         // Follow the symlink and copy the target
@@ -213,7 +236,7 @@ fn handle_symlink(
                 copy_file_to_backup(&resolved_target, backup, config, result)?;
             } else if metadata.is_dir() {
                 fs::create_dir_all(backup)?;
-                copy_directory_contents(&resolved_target, backup, config, result)?;
+                copy_directory_contents(&resolved_target, backup, config, result, show_progress)?;
             }
         }
     } else {
@@ -254,6 +277,52 @@ fn create_temp_backup_path(backup_path: &Path) -> Result<PathBuf> {
 
     let temp_name = format!(".qbak_temp_{}_{}", std::process::id(), filename);
     Ok(parent.join(temp_name))
+}
+
+/// Count the total number of files in a directory recursively
+fn count_files_recursive(dir: &Path, config: &Config) -> Result<usize> {
+    let mut count = 0;
+    
+    if !dir.is_dir() {
+        return Ok(1); // Single file
+    }
+    
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        
+        // Skip hidden files if not configured to include them
+        if !config.include_hidden && is_hidden(&path) {
+            continue;
+        }
+        
+        let metadata = entry.metadata()?;
+        
+        if metadata.is_file() {
+            count += 1;
+        } else if metadata.is_dir() {
+            count += count_files_recursive(&path, config)?;
+        } else if metadata.is_symlink() && config.follow_symlinks {
+            // Count symlink targets if we're following them
+            let target = fs::read_link(&path)?;
+            let resolved_target = if target.is_absolute() {
+                target
+            } else {
+                path.parent().unwrap_or(Path::new(".")).join(target)
+            };
+            
+            if resolved_target.exists() {
+                let target_metadata = fs::metadata(&resolved_target)?;
+                if target_metadata.is_file() {
+                    count += 1;
+                } else if target_metadata.is_dir() {
+                    count += count_files_recursive(&resolved_target, config)?;
+                }
+            }
+        }
+    }
+    
+    Ok(count)
 }
 
 /// Clean up any temporary files that might be left over
@@ -640,6 +709,82 @@ mod tests {
         assert!(result.backup_path.exists());
         assert_eq!(result.total_size, 0);
         assert_eq!(result.files_processed, 1);
+    }
+
+    #[test]
+    fn test_count_files_recursive() {
+        let dir = tempdir().unwrap();
+        let source_dir = dir.path().join("source");
+        fs::create_dir_all(&source_dir).unwrap();
+
+        // Create test structure
+        File::create(source_dir.join("file1.txt")).unwrap();
+        File::create(source_dir.join("file2.txt")).unwrap();
+        
+        let subdir = source_dir.join("subdir");
+        fs::create_dir_all(&subdir).unwrap();
+        File::create(subdir.join("file3.txt")).unwrap();
+        File::create(subdir.join("file4.txt")).unwrap();
+
+        let config = default_config();
+        let count = count_files_recursive(&source_dir, &config).unwrap();
+        assert_eq!(count, 4);
+    }
+
+    #[test]
+    fn test_count_files_recursive_with_hidden() {
+        let dir = tempdir().unwrap();
+        let source_dir = dir.path().join("source");
+        fs::create_dir_all(&source_dir).unwrap();
+
+        // Create normal and hidden files
+        File::create(source_dir.join("file1.txt")).unwrap();
+        File::create(source_dir.join(".hidden")).unwrap();
+
+        // Test with include_hidden = true
+        let mut config = default_config();
+        config.include_hidden = true;
+        let count = count_files_recursive(&source_dir, &config).unwrap();
+        assert_eq!(count, 2);
+
+        // Test with include_hidden = false
+        config.include_hidden = false;
+        let count = count_files_recursive(&source_dir, &config).unwrap();
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test_count_files_recursive_single_file() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("single.txt");
+        File::create(&file_path).unwrap();
+
+        let config = default_config();
+        let count = count_files_recursive(&file_path, &config).unwrap();
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test_progress_threshold_behavior() {
+        let dir = tempdir().unwrap();
+        let source_dir = dir.path().join("source");
+        fs::create_dir_all(&source_dir).unwrap();
+
+        // Create exactly 3 files
+        File::create(source_dir.join("file1.txt")).unwrap();
+        File::create(source_dir.join("file2.txt")).unwrap();
+        File::create(source_dir.join("file3.txt")).unwrap();
+
+        // Test with threshold = 2 (should show progress)
+        let mut config = default_config();
+        config.progress_threshold = 2;
+        let result = backup_directory(&source_dir, &config).unwrap();
+        assert_eq!(result.files_processed, 3);
+
+        // Test with threshold = 5 (should NOT show progress)
+        config.progress_threshold = 5;
+        let result2 = backup_directory(&source_dir, &config).unwrap();
+        assert_eq!(result2.files_processed, 3);
     }
 
     #[test]

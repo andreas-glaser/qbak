@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Provides examples of backup names with current settings
   - Includes instructions for creating config file if none exists
 
+### Fixed
+- Progress indication now works as intended for directory backups
+  - Shows "Backing up X files..." message at start
+  - Displays progress dots during backup (every 10th file)
+  - Shows "Backup completed: X files processed" at end
+  - Only triggered when file count exceeds `progress_threshold` setting
+
 ### Changed
 - Development version bump to 1.1.0
 
