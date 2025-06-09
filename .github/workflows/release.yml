@@ -44,7 +44,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: qbak v${{ steps.get_version.outputs.version }}
@@ -117,13 +117,13 @@ jobs:
 
       - name: Upload release asset (Unix)
         if: matrix.os != 'windows-latest'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: ${{ matrix.name }}.tar.gz
 
       - name: Upload release asset (Windows)
         if: matrix.os == 'windows-latest'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: ${{ matrix.name }}.zip
 
@@ -181,6 +181,6 @@ jobs:
           done
 
       - name: Upload checksums
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: checksums.txt 
