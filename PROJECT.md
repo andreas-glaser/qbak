@@ -1,7 +1,5 @@
 # Quick Backup — qbak
 
-Version: 1.2.0  (in development)
-
 ## Summary
 
 qbak is a single-command backup helper for Linux (and other POSIX systems).
