@@ -19,7 +19,8 @@ pub fn generate_backup_name(source: &Path, config: &Config) -> Result<PathBuf> {
 
     // Create backup filename
     let backup_name = if extension.is_empty() {
-        format!("{stem}-{timestamp_str}-{}", config.backup_suffix)
+        let suffix = &config.backup_suffix;
+        format!("{stem}-{timestamp_str}-{suffix}")
     } else {
         format!(
             "{stem}-{timestamp_str}-{}.{extension}",
