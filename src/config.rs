@@ -622,7 +622,7 @@ max_filename_length = not_a_number
         assert!(sample.contains("follow_symlinks"));
         assert!(sample.contains("include_hidden"));
         assert!(sample.contains("max_filename_length"));
-        println!("{}", sample);
+        println!("{sample}");
 
         // Verify it's valid INI by parsing it
         let dir = tempdir().unwrap();

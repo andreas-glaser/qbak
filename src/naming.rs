@@ -19,11 +19,11 @@ pub fn generate_backup_name(source: &Path, config: &Config) -> Result<PathBuf> {
 
     // Create backup filename
     let backup_name = if extension.is_empty() {
-        format!("{}-{}-{}", stem, timestamp_str, config.backup_suffix)
+        format!("{stem}-{timestamp_str}-{}", config.backup_suffix)
     } else {
         format!(
-            "{}-{}-{}.{}",
-            stem, timestamp_str, config.backup_suffix, extension
+            "{stem}-{timestamp_str}-{}.{extension}",
+            config.backup_suffix
         )
     };
 
@@ -56,9 +56,9 @@ pub fn resolve_collision(base_path: &Path) -> Result<PathBuf> {
     // Try adding counters until we find an available name
     for counter in 1..=9999 {
         let new_name = if extension.is_empty() {
-            format!("{}-{}", stem, counter)
+            format!("{stem}-{counter}")
         } else {
-            format!("{}-{}.{}", stem, counter, extension)
+            format!("{stem}-{counter}.{extension}")
         };
 
         let new_path = parent.join(&new_name);
