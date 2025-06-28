@@ -112,21 +112,21 @@ mod tests {
         let path = PathBuf::from("/test/path");
 
         let source_not_found = QbakError::SourceNotFound { path: path.clone() };
-        assert!(format!("{}", source_not_found).contains("/test/path"));
+        assert!(format!("{source_not_found}").contains("/test/path"));
 
         let filename_too_long = QbakError::FilenameTooLong {
             length: 300,
             max: 255,
         };
-        assert!(format!("{}", filename_too_long).contains("300"));
-        assert!(format!("{}", filename_too_long).contains("255"));
+        assert!(format!("{filename_too_long}").contains("300"));
+        assert!(format!("{filename_too_long}").contains("255"));
 
         let insufficient_space = QbakError::InsufficientSpace {
             needed: 1000,
             available: 500,
         };
-        assert!(format!("{}", insufficient_space).contains("1000"));
-        assert!(format!("{}", insufficient_space).contains("500"));
+        assert!(format!("{insufficient_space}").contains("1000"));
+        assert!(format!("{insufficient_space}").contains("500"));
     }
 
     #[test]
@@ -264,7 +264,7 @@ mod tests {
         ];
 
         for error in errors {
-            let display = format!("{}", error);
+            let display = format!("{error}");
             assert!(!display.is_empty(), "Error display should not be empty");
         }
     }
