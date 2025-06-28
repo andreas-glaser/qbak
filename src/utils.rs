@@ -65,7 +65,8 @@ pub fn validate_backup_filename(path: &Path) -> Result<()> {
     if let Some(parent) = path.parent() {
         if parent.exists() && fs::metadata(parent).is_ok() {
             // Try to create a temporary file to test write permissions
-            let temp_name = format!(".qbak_test_{}", std::process::id());
+            let process_id = std::process::id();
+            let temp_name = format!(".qbak_test_{process_id}");
             let temp_path = parent.join(temp_name);
 
             match fs::File::create(&temp_path) {
@@ -210,7 +211,8 @@ pub fn format_size(bytes: u64) -> String {
         unit_index += 1;
     }
 
-    format!("{size:.1} {}", UNITS[unit_index])
+    let unit = UNITS[unit_index];
+    format!("{size:.1} {unit}")
 }
 
 /// Check if a path is hidden (starts with .)

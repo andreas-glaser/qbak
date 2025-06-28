@@ -8,14 +8,14 @@ fn main() {
     match result {
         Ok(exit_code) => process::exit(exit_code),
         Err(error) => {
-            eprintln!("Error: {}", error);
+            eprintln!("Error: {error}");
 
             // Show suggestions if available
             let suggestions = error.suggestions();
             if !suggestions.is_empty() {
                 eprintln!("\nSuggestions:");
                 for suggestion in suggestions {
-                    eprintln!("  - {}", suggestion);
+                    eprintln!("  - {suggestion}");
                 }
             }
 
@@ -80,7 +80,7 @@ fn run() -> Result<i32, QbakError> {
     let config = load_config()
         .map_err(|e| {
             if verbose {
-                eprintln!("Warning: Could not load config, using defaults: {}", e);
+                eprintln!("Warning: Could not load config, using defaults: {e}");
             }
             e
         })
@@ -119,13 +119,13 @@ fn run() -> Result<i32, QbakError> {
                 if e.is_recoverable() {
                     // For recoverable errors, show error but continue
                     if !quiet {
-                        eprintln!("Error processing {}: {}", target_str, e);
+                        eprintln!("Error processing {target_str}: {e}");
 
                         let suggestions = e.suggestions();
                         if !suggestions.is_empty() && verbose {
                             eprintln!("Suggestions:");
                             for suggestion in suggestions {
-                                eprintln!("  - {}", suggestion);
+                                eprintln!("  - {suggestion}");
                             }
                         }
                     }
@@ -139,10 +139,7 @@ fn run() -> Result<i32, QbakError> {
 
     // Summary
     if !quiet && (success_count > 1 || error_count > 0) {
-        println!(
-            "Backup summary: {} succeeded, {} failed",
-            success_count, error_count
-        );
+        println!("Backup summary: {success_count} succeeded, {error_count} failed");
     }
 
     // Return appropriate exit code
@@ -166,11 +163,8 @@ fn process_target(
         let final_path = qbak::resolve_collision(&backup_path)?;
 
         let size = qbak::calculate_size(target)?;
-        println!(
-            "Would create backup: {} ({})",
-            final_path.display(),
-            qbak::utils::format_size(size)
-        );
+        let size_str = qbak::utils::format_size(size);
+        println!("Would create backup: {} ({size_str})", final_path.display());
         return Ok(());
     }
 
@@ -185,11 +179,15 @@ fn process_target(
     if verbose {
         println!("Processed: {}", target.display());
         println!("  → {}", result.backup_path.display());
-        println!("  Files: {}", result.files_processed);
-        println!("  Size: {}", qbak::utils::format_size(result.total_size));
-        println!("  Duration: {:.2}s", result.duration.as_secs_f64());
+        let files = result.files_processed;
+        let size_str = qbak::utils::format_size(result.total_size);
+        let duration = result.duration.as_secs_f64();
+        println!("  Files: {files}");
+        println!("  Size: {size_str}");
+        println!("  Duration: {duration:.2}s");
     } else if !quiet {
-        println!("{}", result.summary());
+        let summary = result.summary();
+        println!("{summary}");
     }
 
     Ok(())

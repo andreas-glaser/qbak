@@ -139,7 +139,8 @@ pub fn dump_config(config: &Config) -> Result<()> {
 
     // Show config file path and status
     if config_path.exists() {
-        println!("Config file: {} (found)", config_path.display());
+        let path_display = config_path.display();
+        println!("Config file: {path_display} (found)");
     } else {
         println!(
             "Config file: {} (not found, using defaults)",
@@ -151,12 +152,18 @@ pub fn dump_config(config: &Config) -> Result<()> {
     // Show current settings
     println!("Current Settings:");
     println!("----------------");
-    println!("timestamp_format     = {}", config.timestamp_format);
-    println!("backup_suffix        = {}", config.backup_suffix);
-    println!("preserve_permissions = {}", config.preserve_permissions);
-    println!("follow_symlinks      = {}", config.follow_symlinks);
-    println!("include_hidden       = {}", config.include_hidden);
-    println!("max_filename_length  = {}", config.max_filename_length);
+    let timestamp_format = &config.timestamp_format;
+    let backup_suffix = &config.backup_suffix;
+    let preserve_permissions = config.preserve_permissions;
+    let follow_symlinks = config.follow_symlinks;
+    let include_hidden = config.include_hidden;
+    let max_filename_length = config.max_filename_length;
+    println!("timestamp_format     = {timestamp_format}");
+    println!("backup_suffix        = {backup_suffix}");
+    println!("preserve_permissions = {preserve_permissions}");
+    println!("follow_symlinks      = {follow_symlinks}");
+    println!("include_hidden       = {include_hidden}");
+    println!("max_filename_length  = {max_filename_length}");
     println!();
 
     // Show example usage
@@ -170,7 +177,8 @@ pub fn dump_config(config: &Config) -> Result<()> {
         "data.tar.gz → data.tar-YYYYMMDDTHHMMSS-{}.gz",
         config.backup_suffix
     );
-    println!("no-ext → no-ext-YYYYMMDDTHHMMSS-{}", config.backup_suffix);
+    let suffix = &config.backup_suffix;
+    println!("no-ext → no-ext-YYYYMMDDTHHMMSS-{suffix}");
     println!();
 
     if !config_path.exists() {
