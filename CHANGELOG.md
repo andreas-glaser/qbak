@@ -7,13 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] - TBD
+## [1.2.0] - 2025-06-28
 
 ### Added
-- (Features to be added in 1.2.0)
+- Enhanced test coverage analysis and reporting (86 comprehensive tests)
+- Improved development workflow with pre-commit hooks and quality checks
+
+### Fixed
+- Comprehensive clippy warning resolution across entire codebase
+- Fixed all `uninlined_format_args` warnings for better code consistency
+- Fixed `format!` macro usage in error handling and tests
+- Maintained Rust 1.71 MSRV compatibility with dependency constraints
 
 ### Changed
-- Development version bump to 1.2.0
+- Improved code quality and formatting consistency throughout project
+- Streamlined development environment configuration
+- Enhanced documentation structure and completeness
+- Strengthened CI/CD pipeline with better quality gates
+
+### Internal
+- Consolidated multiple patch releases (1.1.2, 1.1.3) into this minor release
+- Improved development branch management and release workflow
+- Enhanced pre-commit validation and testing procedures
 
 ## [1.1.3] - 2025-06-28
 
@@ -111,7 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Atomic file operations prevent corruption
 - Signal handling for graceful cleanup on interruption
 
-[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.2.0...HEAD
 [1.2.0]: https://github.com/andreas-glaser/qbak/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/andreas-glaser/qbak/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/andreas-glaser/qbak/compare/v1.1.1...v1.1.2
