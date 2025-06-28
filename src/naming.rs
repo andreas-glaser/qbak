@@ -132,7 +132,7 @@ fn validate_filesystem_chars(filename: &str) -> Result<()> {
     let stem = split_filename(filename).0.to_uppercase();
     if RESERVED_NAMES.contains(&stem.as_str()) {
         return Err(QbakError::InvalidFilesystemChars {
-            chars: format!("Reserved name: {}", stem),
+            chars: format!("Reserved name: {stem}"),
         });
     }
 

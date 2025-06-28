@@ -283,7 +283,7 @@ fn create_temp_backup_path(backup_path: &Path) -> Result<PathBuf> {
         .and_then(|name| name.to_str())
         .ok_or_else(|| QbakError::validation("Invalid backup filename"))?;
 
-    let temp_name = format!(".qbak_temp_{}_{}", std::process::id(), filename);
+    let temp_name = format!(".qbak_temp_{}_{filename}", std::process::id());
     Ok(parent.join(temp_name))
 }
 

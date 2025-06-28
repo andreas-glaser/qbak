@@ -199,7 +199,7 @@ pub fn format_size(bytes: u64) -> String {
     const THRESHOLD: u64 = 1024;
 
     if bytes < THRESHOLD {
-        return format!("{} B", bytes);
+        return format!("{bytes} B");
     }
 
     let mut size = bytes as f64;
@@ -210,7 +210,7 @@ pub fn format_size(bytes: u64) -> String {
         unit_index += 1;
     }
 
-    format!("{:.1} {}", size, UNITS[unit_index])
+    format!("{size:.1} {}", UNITS[unit_index])
 }
 
 /// Check if a path is hidden (starts with .)
@@ -258,14 +258,13 @@ mod tests {
         for path_str in paths_with_traversal {
             let path = Path::new(path_str);
             let result = validate_source(path);
-            assert!(result.is_err(), "Path {} should be rejected", path_str);
+            assert!(result.is_err(), "Path {path_str} should be rejected");
 
             // The error could be PathTraversal or SourceNotFound since the path doesn't exist
             match result.unwrap_err() {
                 QbakError::PathTraversal { .. } | QbakError::SourceNotFound { .. } => (),
                 other => panic!(
-                    "Expected PathTraversal or SourceNotFound error for {}, got {:?}",
-                    path_str, other
+                    "Expected PathTraversal or SourceNotFound error for {path_str}, got {other:?}"
                 ),
             }
         }
