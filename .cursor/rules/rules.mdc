@@ -1,0 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- Ensure git commits are short and concise
+- Before any commit, run: `cargo test`, `cargo fmt`, `cargo clippy -- -D warnings`, `cargo check`
+- All pre-commit commands must pass (exit code 0)
+- Write tests for new functionality
+- Use proper Rust error handling with `Result<T, E>`  
+- This is a backup utility - prioritize data safety
+- Prefer `&str` over `String` for function parameters
+- Minimize `unwrap()` usage
