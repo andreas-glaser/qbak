@@ -84,7 +84,7 @@ impl QbakError {
                 "Use a shorter backup suffix in config".to_string(),
             ],
             QbakError::InvalidFilesystemChars { chars } => vec![
-                format!("Rename file to remove problematic characters: {}", chars),
+                format!("Rename file to remove problematic characters: {chars}"),
                 "Use a different filesystem that supports these characters".to_string(),
             ],
             QbakError::InsufficientSpace { .. } => vec![

@@ -41,7 +41,7 @@ pub fn load_config() -> Result<Config> {
 
     let mut conf = Ini::new();
     conf.load(&config_path)
-        .map_err(|e| QbakError::config(format!("Failed to parse config file: {}", e)))?;
+        .map_err(|e| QbakError::config(format!("Failed to parse config file: {e}")))?;
 
     let mut config = default_config();
 
@@ -68,7 +68,7 @@ pub fn load_config() -> Result<Config> {
     if let Some(value) = conf.get("qbak", "max_filename_length") {
         config.max_filename_length = value
             .parse()
-            .map_err(|_| QbakError::config(format!("Invalid max_filename_length: {}", value)))?;
+            .map_err(|_| QbakError::config(format!("Invalid max_filename_length: {value}")))?;
     }
 
     Ok(config)
