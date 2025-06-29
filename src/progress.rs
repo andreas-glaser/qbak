@@ -32,15 +32,16 @@ impl Default for ProgressConfig {
 
 impl ProgressConfig {
     pub fn auto_detect() -> Self {
-        let mut config = Self::default();
-
         // Disable in CI environments
         if is_ci_environment() {
-            config.enabled = false;
-            config.is_interactive = false;
+            Self {
+                enabled: false,
+                is_interactive: false,
+                ..Self::default()
+            }
+        } else {
+            Self::default()
         }
-
-        config
     }
 
     pub fn should_show_progress(
