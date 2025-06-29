@@ -120,11 +120,11 @@ qbak --dry-run important.txt
 # Verbose output for detailed information
 qbak --verbose my-project/
 # Output: 
-# Processed: my-project/
-#   → my-project-20250603T145232-qbak/
-#   Files: 42
-#   Size: 15.3 MB
-#   Duration: 0.12s
+Processed: my-project/
+  → my-project-20250603T145232-qbak/
+  Files: 42
+  Size: 15.3 MB
+  Duration: 0.12s
 
 # Quiet mode (only errors)
 qbak --quiet *.txt
