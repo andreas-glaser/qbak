@@ -54,8 +54,16 @@ impl ProgressConfig {
             return false;
         }
 
-        if force_progress || self.force_enabled {
+        if force_progress {
+            return true;
+        }
+
+        if self.force_enabled {
             return self.is_interactive;
+        }
+
+        if !self.is_interactive {
+            return false;
         }
 
         // Check thresholds

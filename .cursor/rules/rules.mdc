@@ -12,24 +12,15 @@ alwaysApply: true
 - Prefer `&str` over `String` for function parameters
 - Minimize `unwrap()` usage
 
-## Format String Rules (Prevent clippy::uninlined_format_args)
-- ALWAYS use inline format arguments: `format!("{variable}")` not `format!("{}", variable)`
-- NEVER write `format!("{}", value)` - always write `format!("{value}")`
-- NEVER write `format!("{:.2}", number)` - always write `format!("{number:.2}")`
-- For complex expressions, extract to a variable first: `let formatted = expr; format!("{formatted}")`
+## Format String Rules
+- Use modern Rust format syntax: `format!("{variable}")` not `format!("{}", variable)`
 - Examples:
   ```rust
-  // ❌ BAD - clippy error:
+  // ❌ Old syntax:
   format!("{} files", count)
   format!("{:.1} {}", size, unit)
   
-  // ✅ GOOD - modern Rust:
+  // ✅ Modern syntax:
   format!("{count} files") 
   format!("{size:.1} {unit}")
-  
-  // ✅ GOOD - complex expressions:
-  let size_str = format_size(bytes);
-  format!("Total: {size_str}")
   ```
-- When adding new format! calls, immediately check for clippy::uninlined_format_args compliance
-- If fixing a format string error, search entire codebase for similar patterns using: `cargo clippy -- -D warnings`
