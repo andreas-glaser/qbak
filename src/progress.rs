@@ -122,8 +122,7 @@ impl BackupProgress {
                 .and_then(|n| n.to_str())
                 .unwrap_or("...");
             pb.set_message(format!(
-                "Scanning: {} files found, current: {}",
-                files_found, filename
+                "Scanning: {files_found} files found, current: {filename}"
             ));
             pb.tick();
         }
@@ -138,11 +137,8 @@ impl BackupProgress {
 
         // Finish scanning spinner
         if let Some(pb) = self.progress_bar.take() {
-            pb.finish_with_message(format!(
-                "Scan complete: {} files, {}",
-                total_files,
-                format_size(total_size)
-            ));
+            let size_str = format_size(total_size);
+            pb.finish_with_message(format!("Scan complete: {total_files} files, {size_str}"));
         }
 
         // Start backup progress bar
