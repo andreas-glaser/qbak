@@ -1,5 +1,5 @@
 use clap::{Arg, ArgAction, Command};
-use qbak::{backup_directory, backup_file, dump_config, load_config, QbakError};
+use qbak::{backup_file, dump_config, load_config, QbakError};
 use std::path::Path;
 use std::process;
 
@@ -60,7 +60,21 @@ fn run() -> Result<i32, QbakError> {
                 .long("quiet")
                 .help("Suppress all output except errors")
                 .action(ArgAction::SetTrue)
-                .conflicts_with("verbose"),
+                .conflicts_with_all(["verbose", "progress"]),
+        )
+        .arg(
+            Arg::new("progress")
+                .long("progress")
+                .help("Force progress indication even for small operations")
+                .action(ArgAction::SetTrue)
+                .conflicts_with("no-progress"),
+        )
+        .arg(
+            Arg::new("no-progress")
+                .long("no-progress")
+                .help("Disable progress indication completely")
+                .action(ArgAction::SetTrue)
+                .conflicts_with("progress"),
         )
         .arg(
             Arg::new("dump-config")
@@ -75,9 +89,11 @@ fn run() -> Result<i32, QbakError> {
     let dry_run = matches.get_flag("dry-run");
     let verbose = matches.get_flag("verbose");
     let quiet = matches.get_flag("quiet");
+    let force_progress = matches.get_flag("progress");
+    let no_progress = matches.get_flag("no-progress");
 
     // Load configuration
-    let config = load_config()
+    let mut config = load_config()
         .map_err(|e| {
             if verbose {
                 eprintln!("Warning: Could not load config, using defaults: {e}");
@@ -85,6 +101,13 @@ fn run() -> Result<i32, QbakError> {
             e
         })
         .unwrap_or_else(|_| qbak::default_config());
+
+    // Apply command line progress flags (they override config)
+    if quiet || no_progress {
+        config.progress.enabled = false;
+    } else if force_progress {
+        config.progress.force_enabled = true;
+    }
 
     // Handle dump-config flag early
     if dump_config_flag {
@@ -111,7 +134,14 @@ fn run() -> Result<i32, QbakError> {
     for target_str in targets {
         let target_path = Path::new(target_str);
 
-        match process_target(target_path, &config, dry_run, verbose, quiet) {
+        match process_target(
+            target_path,
+            &config,
+            dry_run,
+            verbose,
+            quiet,
+            force_progress,
+        ) {
             Ok(_) => success_count += 1,
             Err(e) => {
                 error_count += 1;
@@ -156,21 +186,39 @@ fn process_target(
     dry_run: bool,
     verbose: bool,
     quiet: bool,
+    force_progress: bool,
 ) -> Result<(), QbakError> {
     if dry_run {
         // Dry run mode - just show what would be done
         let backup_path = qbak::generate_backup_name(target, config)?;
         let final_path = qbak::resolve_collision(&backup_path)?;
 
-        let size = qbak::calculate_size(target)?;
-        let size_str = qbak::utils::format_size(size);
-        println!("Would create backup: {} ({size_str})", final_path.display());
+        if target.is_dir() {
+            // For directories, potentially show scanning progress in dry run
+            let should_show_progress =
+                config.progress.should_show_progress(0, 0, force_progress) && !quiet;
+            let (file_count, total_size) = if should_show_progress {
+                qbak::count_files_and_size_with_progress(target, config)?
+            } else {
+                qbak::count_files_and_size(target, config)?
+            };
+            let size_str = qbak::utils::format_size(total_size);
+            println!(
+                "Would create backup: {} ({} files, {size_str})",
+                final_path.display(),
+                file_count
+            );
+        } else {
+            let size = qbak::calculate_size(target)?;
+            let size_str = qbak::utils::format_size(size);
+            println!("Would create backup: {} ({size_str})", final_path.display());
+        }
         return Ok(());
     }
 
     // Perform the actual backup
     let result = if target.is_dir() {
-        backup_directory(target, config, verbose)?
+        qbak::backup_directory_with_progress(target, config, force_progress || verbose, quiet)?
     } else {
         backup_file(target, config)?
     };
@@ -232,7 +280,7 @@ mod tests {
         File::create(&source_path).unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, false, false, true);
+        let result = process_target(&source_path, &config, false, false, true, false);
         assert!(result.is_ok());
     }
 
@@ -243,7 +291,7 @@ mod tests {
         File::create(&source_path).unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, true, false, false);
+        let result = process_target(&source_path, &config, true, false, false, false);
         assert!(result.is_ok());
 
         // In dry run mode, no backup should be created
@@ -257,7 +305,7 @@ mod tests {
         let source_path = dir.path().join("nonexistent.txt");
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, false, false, true);
+        let result = process_target(&source_path, &config, false, false, true, false);
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -276,7 +324,7 @@ mod tests {
         std::fs::write(source_dir.join("file.txt"), "content").unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_dir, &config, false, false, true);
+        let result = process_target(&source_dir, &config, false, false, true, false);
         assert!(result.is_ok());
     }
 
@@ -290,7 +338,7 @@ mod tests {
 
         let config = qbak::default_config();
         // Test verbose mode (should not panic or error)
-        let result = process_target(&source_path, &config, false, true, false);
+        let result = process_target(&source_path, &config, false, true, false, false);
         assert!(result.is_ok());
     }
 
@@ -302,7 +350,7 @@ mod tests {
         std::fs::write(source_dir.join("file.txt"), "content").unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_dir, &config, true, false, false);
+        let result = process_target(&source_dir, &config, true, false, false, false);
         assert!(result.is_ok());
 
         // Verify no backup was actually created
@@ -318,7 +366,7 @@ mod tests {
 
         let config = qbak::default_config();
         // Test quiet mode
-        let result = process_target(&source_path, &config, false, false, true);
+        let result = process_target(&source_path, &config, false, false, true, false);
         assert!(result.is_ok());
     }
 
@@ -332,7 +380,7 @@ mod tests {
         config.backup_suffix = "custom".to_string();
         config.preserve_permissions = false;
 
-        let result = process_target(&source_path, &config, false, false, true);
+        let result = process_target(&source_path, &config, false, false, true, false);
         assert!(result.is_ok());
     }
 
@@ -346,7 +394,7 @@ mod tests {
         std::fs::write(&source_path, content).unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, false, true, false);
+        let result = process_target(&source_path, &config, false, true, false, false);
         assert!(result.is_ok());
     }
 
@@ -357,7 +405,7 @@ mod tests {
         File::create(&source_path).unwrap(); // Creates empty file
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, false, false, false);
+        let result = process_target(&source_path, &config, false, false, false, false);
         assert!(result.is_ok());
     }
 
@@ -368,7 +416,7 @@ mod tests {
         std::fs::write(&source_path, "content").unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, false, false, true);
+        let result = process_target(&source_path, &config, false, false, true, false);
         assert!(result.is_ok());
     }
 
@@ -379,7 +427,7 @@ mod tests {
         std::fs::write(&source_path, "unicode content").unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, false, false, true);
+        let result = process_target(&source_path, &config, false, false, true, false);
         assert!(result.is_ok());
     }
 
@@ -390,7 +438,7 @@ mod tests {
         std::fs::write(&source_path, "readme content").unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, false, false, true);
+        let result = process_target(&source_path, &config, false, false, true, false);
         assert!(result.is_ok());
     }
 
@@ -401,7 +449,7 @@ mod tests {
         std::fs::write(&source_path, "archive content").unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, false, false, true);
+        let result = process_target(&source_path, &config, false, false, true, false);
         assert!(result.is_ok());
     }
 
@@ -412,7 +460,7 @@ mod tests {
         std::fs::write(&source_path, "hidden content").unwrap();
 
         let config = qbak::default_config();
-        let result = process_target(&source_path, &config, false, false, true);
+        let result = process_target(&source_path, &config, false, false, true, false);
         assert!(result.is_ok());
     }
 
@@ -424,7 +472,7 @@ mod tests {
 
         let config = qbak::default_config();
         // Test dry run with verbose output
-        let result = process_target(&source_path, &config, true, true, false);
+        let result = process_target(&source_path, &config, true, true, false, false);
         assert!(result.is_ok());
     }
 }

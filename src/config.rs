@@ -1,7 +1,9 @@
 use crate::error::QbakError;
+use crate::progress::ProgressConfig;
 use crate::Result;
 use configparser::ini::Ini;
 use std::path::PathBuf;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -11,6 +13,7 @@ pub struct Config {
     pub follow_symlinks: bool,
     pub include_hidden: bool,
     pub max_filename_length: usize,
+    pub progress: ProgressConfig,
 }
 
 impl Default for Config {
@@ -22,6 +25,7 @@ impl Default for Config {
             follow_symlinks: true,
             include_hidden: true,
             max_filename_length: 255,
+            progress: ProgressConfig::auto_detect(),
         }
     }
 }
@@ -69,6 +73,31 @@ pub fn load_config() -> Result<Config> {
         config.max_filename_length = value
             .parse()
             .map_err(|_| QbakError::config(format!("Invalid max_filename_length: {value}")))?;
+    }
+
+    // Load progress configuration
+    if let Some(value) = conf.get("progress", "enabled") {
+        config.progress.enabled = parse_bool(&value).unwrap_or(config.progress.enabled);
+    }
+    if let Some(value) = conf.get("progress", "force_enabled") {
+        config.progress.force_enabled = parse_bool(&value).unwrap_or(config.progress.force_enabled);
+    }
+    if let Some(value) = conf.get("progress", "min_files") {
+        config.progress.min_files_threshold = value
+            .parse()
+            .map_err(|_| QbakError::config(format!("Invalid min_files: {value}")))?;
+    }
+    if let Some(value) = conf.get("progress", "min_size_mb") {
+        let mb: u64 = value
+            .parse()
+            .map_err(|_| QbakError::config(format!("Invalid min_size_mb: {value}")))?;
+        config.progress.min_size_threshold = mb * 1024 * 1024;
+    }
+    if let Some(value) = conf.get("progress", "min_duration_seconds") {
+        let seconds: u64 = value
+            .parse()
+            .map_err(|_| QbakError::config(format!("Invalid min_duration_seconds: {value}")))?;
+        config.progress.min_duration_threshold = Duration::from_secs(seconds);
     }
 
     Ok(config)
@@ -125,6 +154,18 @@ include_hidden = true
 
 # Maximum filename length before showing error
 max_filename_length = 255
+
+[progress]
+# Enable/disable progress indication (can be overridden by command line flags)
+enabled = true
+
+# Force progress indication regardless of thresholds (equivalent to always using --progress)
+force_enabled = false
+
+# Minimum thresholds for showing progress (ignored if --progress flag is used)
+min_files = 50
+min_size_mb = 10
+min_duration_seconds = 2
 "#
     .to_string()
 }
@@ -164,6 +205,26 @@ pub fn dump_config(config: &Config) -> Result<()> {
     println!("follow_symlinks      = {follow_symlinks}");
     println!("include_hidden       = {include_hidden}");
     println!("max_filename_length  = {max_filename_length}");
+    println!();
+
+    // Show progress settings
+    println!("Progress Settings:");
+    println!("-----------------");
+    let progress = &config.progress;
+    println!("enabled              = {}", progress.enabled);
+    println!("force_enabled        = {}", progress.force_enabled);
+    println!("min_files_threshold  = {}", progress.min_files_threshold);
+    println!(
+        "min_size_threshold   = {} MB",
+        progress.min_size_threshold / (1024 * 1024)
+    );
+    println!(
+        "min_duration_threshold = {} seconds",
+        progress.min_duration_threshold.as_secs()
+    );
+    println!("supports_ansi        = {}", progress.supports_ansi);
+    println!("terminal_width       = {}", progress.terminal_width);
+    println!("is_interactive       = {}", progress.is_interactive);
     println!();
 
     // Show example usage

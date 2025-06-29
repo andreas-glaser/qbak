@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::error::QbakError;
 use crate::naming::{generate_backup_name, resolve_collision};
+use crate::progress::{create_progress_bar, BackupProgress};
 use crate::utils::{
     calculate_size, copy_permissions, copy_timestamps, format_size, is_hidden, validate_source,
 };
@@ -348,6 +349,270 @@ pub fn cleanup_temp_files(dir: &Path) -> Result<()> {
             if filename.starts_with(".qbak_temp_") {
                 // Try to remove temp file
                 let _ = fs::remove_file(&path);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Backup a directory with progress indication
+pub fn backup_directory_with_progress(
+    source: &Path,
+    config: &Config,
+    force_progress: bool,
+    quiet: bool,
+) -> Result<BackupResult> {
+    let start_time = Instant::now();
+
+    // Validate source
+    validate_source(source)?;
+
+    // Generate backup name
+    let backup_path = generate_backup_name(source, config)?;
+    let final_backup_path = resolve_collision(&backup_path)?;
+
+    // First, count files and calculate size (scanning phase)
+    let (file_count, total_size) = count_files_and_size(source, config)?;
+
+    // Check if we should show progress
+    let mut progress = if !quiet {
+        create_progress_bar(&config.progress, file_count, total_size, force_progress)
+    } else {
+        None
+    };
+
+    // Start progress if available
+    if let Some(ref mut prog) = progress {
+        prog.start_scanning();
+        prog.finish_scanning(file_count, total_size);
+    }
+
+    // Create backup directory
+    fs::create_dir_all(&final_backup_path)?;
+
+    // Initialize result
+    let mut result = BackupResult::new(source.to_path_buf(), final_backup_path.clone());
+
+    // Copy contents with progress tracking
+    copy_directory_contents_with_progress(
+        source,
+        &final_backup_path,
+        config,
+        &mut result,
+        &mut progress.as_mut(),
+    )?;
+
+    // Finish progress
+    if let Some(ref mut prog) = progress {
+        prog.finish();
+    }
+
+    let duration = start_time.elapsed();
+    result.duration = duration;
+
+    Ok(result)
+}
+
+/// Count files and calculate total size, with optional progress
+pub fn count_files_and_size_with_progress(source: &Path, config: &Config) -> Result<(usize, u64)> {
+    let mut progress = create_progress_bar(&config.progress, 0, 0, true);
+    if let Some(ref mut prog) = progress {
+        prog.start_scanning();
+    }
+
+    let result = count_files_and_size_recursive(source, config, &mut progress.as_mut());
+
+    if let Some(ref mut prog) = progress {
+        prog.finish();
+    }
+
+    result
+}
+
+/// Count files and calculate total size, without progress
+pub fn count_files_and_size(source: &Path, config: &Config) -> Result<(usize, u64)> {
+    let mut none_progress = None;
+    count_files_and_size_recursive(source, config, &mut none_progress)
+}
+
+/// Recursive function to count files and calculate total size
+fn count_files_and_size_recursive(
+    dir: &Path,
+    config: &Config,
+    progress: &mut Option<&mut BackupProgress>,
+) -> Result<(usize, u64)> {
+    let mut file_count = 0;
+    let mut total_size = 0;
+
+    if !dir.is_dir() {
+        // Single file
+        let size = calculate_size(dir)?;
+        return Ok((1, size));
+    }
+
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        // Update progress if available
+        if let Some(ref mut prog) = progress {
+            prog.update_scan_progress(file_count, &path);
+        }
+
+        // Skip hidden files if not configured to include them
+        if !config.include_hidden && is_hidden(&path) {
+            continue;
+        }
+
+        let metadata = entry.metadata()?;
+
+        if metadata.is_file() {
+            file_count += 1;
+            total_size += metadata.len();
+        } else if metadata.is_dir() {
+            let (dir_files, dir_size) = count_files_and_size_recursive(&path, config, progress)?;
+            file_count += dir_files;
+            total_size += dir_size;
+        } else if metadata.is_symlink() && config.follow_symlinks {
+            // Count symlink targets if we're following them
+            let target = fs::read_link(&path)?;
+            let resolved_target = if target.is_absolute() {
+                target
+            } else {
+                path.parent().unwrap_or(Path::new(".")).join(target)
+            };
+
+            if resolved_target.exists() {
+                let target_metadata = fs::metadata(&resolved_target)?;
+                if target_metadata.is_file() {
+                    file_count += 1;
+                    total_size += target_metadata.len();
+                } else if target_metadata.is_dir() {
+                    let (dir_files, dir_size) =
+                        count_files_and_size_recursive(&resolved_target, config, progress)?;
+                    file_count += dir_files;
+                    total_size += dir_size;
+                }
+            }
+        }
+    }
+
+    Ok((file_count, total_size))
+}
+
+/// Copy directory contents with progress tracking
+fn copy_directory_contents_with_progress(
+    source_dir: &Path,
+    backup_dir: &Path,
+    config: &Config,
+    result: &mut BackupResult,
+    progress: &mut Option<&mut BackupProgress>,
+) -> Result<()> {
+    for entry in fs::read_dir(source_dir)? {
+        let entry = entry?;
+        let source_path = entry.path();
+        let filename = source_path.file_name().unwrap();
+        let backup_path = backup_dir.join(filename);
+
+        // Skip hidden files if not configured to include them
+        if !config.include_hidden && is_hidden(&source_path) {
+            continue;
+        }
+
+        let metadata = entry.metadata()?;
+
+        if metadata.is_file() {
+            copy_file_to_backup(&source_path, &backup_path, config, result)?;
+
+            // Update progress
+            if let Some(ref mut prog) = progress {
+                prog.update_backup_progress(
+                    result.files_processed,
+                    result.total_size,
+                    &source_path,
+                );
+            }
+        } else if metadata.is_dir() {
+            fs::create_dir_all(&backup_path)?;
+            copy_directory_contents_with_progress(
+                &source_path,
+                &backup_path,
+                config,
+                result,
+                progress,
+            )?;
+        } else if metadata.is_symlink() {
+            handle_symlink_with_progress(&source_path, &backup_path, config, result, progress)?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Handle symlink with progress tracking
+fn handle_symlink_with_progress(
+    source: &Path,
+    backup: &Path,
+    config: &Config,
+    result: &mut BackupResult,
+    progress: &mut Option<&mut BackupProgress>,
+) -> Result<()> {
+    if config.follow_symlinks {
+        // Follow the symlink and copy the target
+        let target = fs::read_link(source)?;
+        let resolved_target = if target.is_absolute() {
+            target
+        } else {
+            source.parent().unwrap_or(Path::new(".")).join(target)
+        };
+
+        if resolved_target.exists() {
+            let metadata = fs::metadata(&resolved_target)?;
+            if metadata.is_file() {
+                copy_file_to_backup(&resolved_target, backup, config, result)?;
+
+                // Update progress
+                if let Some(ref mut prog) = progress {
+                    prog.update_backup_progress(result.files_processed, result.total_size, source);
+                }
+            } else if metadata.is_dir() {
+                fs::create_dir_all(backup)?;
+                copy_directory_contents_with_progress(
+                    &resolved_target,
+                    backup,
+                    config,
+                    result,
+                    progress,
+                )?;
+            }
+        }
+    } else {
+        // Preserve the symlink as-is
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::symlink;
+            let target = fs::read_link(source)?;
+            symlink(target, backup)?;
+        }
+
+        #[cfg(not(unix))]
+        {
+            // On non-Unix systems, copy the target file instead
+            let target = fs::read_link(source)?;
+            let resolved_target = if target.is_absolute() {
+                target
+            } else {
+                source.parent().unwrap_or(Path::new(".")).join(target)
+            };
+
+            if resolved_target.exists() && resolved_target.is_file() {
+                copy_file_to_backup(&resolved_target, backup, config, result)?;
+
+                // Update progress
+                if let Some(ref mut prog) = progress {
+                    prog.update_backup_progress(result.files_processed, result.total_size, source);
+                }
             }
         }
     }
