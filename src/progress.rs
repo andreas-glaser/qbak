@@ -205,12 +205,13 @@ impl BackupProgress {
             .unwrap_or("...");
 
         if self.config.terminal_width >= 120 {
-            format!("Processing: {}", filename)
+            format!("Processing: {filename}")
         } else {
             // For narrower terminals, truncate long filenames
             let max_len = (self.config.terminal_width / 3).min(30);
             if filename.len() > max_len {
-                format!("{}...", &filename[..max_len.saturating_sub(3)])
+                let truncated = &filename[..max_len.saturating_sub(3)];
+                format!("{truncated}...")
             } else {
                 filename.to_string()
             }
@@ -257,7 +258,7 @@ pub fn format_size(bytes: u64) -> String {
     const THRESHOLD: u64 = 1024;
 
     if bytes < THRESHOLD {
-        return format!("{} B", bytes);
+        return format!("{bytes} B");
     }
 
     let mut size = bytes as f64;
@@ -269,7 +270,7 @@ pub fn format_size(bytes: u64) -> String {
     }
 
     let unit = UNITS[unit_index];
-    format!("{:.1} {}", size, unit)
+    format!("{size:.1} {unit}")
 }
 
 #[cfg(test)]
