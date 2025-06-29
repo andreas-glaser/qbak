@@ -311,8 +311,10 @@ mod tests {
 
     #[test]
     fn test_should_show_progress_disabled() {
-        let mut config = ProgressConfig::default();
-        config.enabled = false;
+        let config = ProgressConfig {
+            enabled: false,
+            ..ProgressConfig::default()
+        };
 
         // Should never show when disabled
         assert!(!config.should_show_progress(1000, 1024 * 1024 * 1024, true));
