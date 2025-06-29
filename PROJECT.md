@@ -1,4 +1,4 @@
-# Quick Backup — qbak
+# Quick Backup - qbak
 
 ## Summary
 
@@ -14,12 +14,12 @@ qbak photos/            → photos-20250603T145232-qbak/
 
 ## Project Goals
 
-* **Zero-config** – runs with sensible defaults; no config files required.
-* **Safe & atomic** – never overwrite existing data; fail loudly on errors.
-* **Cross-platform** – primary target is Linux; should compile and work on macOS
+* **Zero-config** - runs with sensible defaults; no config files required.
+* **Safe & atomic** - never overwrite existing data; fail loudly on errors.
+* **Cross-platform** - primary target is Linux; should compile and work on macOS
   and Windows (WSL) too.
-* **Tiny static binary** – one executable placed on the user's $PATH.
-* **Debian/Ubuntu package** – eventual `apt install qbak` via official repos.
+* **Tiny static binary** - one executable placed on the user's $PATH.
+* **Debian/Ubuntu package** - eventual `apt install qbak` via official repos.
 
 ## Security Principles
 

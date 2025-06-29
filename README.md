@@ -19,17 +19,17 @@ qbak photos/            → photos-20250603T145232-qbak/
 
 ## Why qbak?
 
-Have you ever found yourself editing important files or directories and wanting to create a quick local backup first? You know the routine: `cp myconfig.conf backup-myconfig.conf` or something similar. But then you realize your backup naming lacks consistency—no timestamps, no predictable convention, just ad-hoc names that become meaningless over time.
+Have you ever found yourself editing important files or directories and wanting to create a quick local backup first? You know the routine: `cp myconfig.conf backup-myconfig.conf` or something similar. But then you realize your backup naming lacks consistency-no timestamps, no predictable convention, just ad-hoc names that become meaningless over time.
 
 That's exactly where `qbak` comes in. It's a super simple tool designed for lightning-fast local backups with a consistent, timestamped naming convention. Nothing more, nothing less. Just the backup utility you wish you'd had all along.
 
 ## Features
 
-- **Zero-config** – runs with sensible defaults; no config files required
-- **Safe & atomic** – never overwrite existing data; fail loudly on errors
-- **Cross-platform** – primary target is Linux; works on macOS and Windows (WSL) too
-- **Tiny static binary** – single executable with no dependencies
-- **Fast** – efficient file operations with progress indication for large operations
+- **Zero-config** - runs with sensible defaults; no config files required
+- **Safe & atomic** - never overwrite existing data; fail loudly on errors
+- **Cross-platform** - primary target is Linux; works on macOS and Windows (WSL) too
+- **Tiny static binary** - single executable with no dependencies
+- **Fast** - efficient file operations with progress indication for large operations
 
 ## Installation
 
@@ -175,11 +175,11 @@ max_filename_length = 255
 
 ## Safety Features
 
-- **Never overwrites existing files** – uses collision counters instead
-- **Atomic operations** – temporary files ensure no partial backups
-- **Input validation** – rejects dangerous paths and filenames
-- **Permission preservation** – maintains original file permissions and timestamps
-- **Error recovery** – continues with other files if one fails
+- **Never overwrites existing files** - uses collision counters instead
+- **Atomic operations** - temporary files ensure no partial backups
+- **Input validation** - rejects dangerous paths and filenames
+- **Permission preservation** - maintains original file permissions and timestamps
+- **Error recovery** - continues with other files if one fails
 
 ## Target Audience
 
