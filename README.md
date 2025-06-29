@@ -29,7 +29,7 @@ That's exactly where `qbak` comes in. It's a super simple tool designed for ligh
 - **Safe & atomic** - never overwrite existing data; fail loudly on errors
 - **Cross-platform** - primary target is Linux; works on macOS and Windows (WSL) too
 - **Tiny static binary** - single executable with no dependencies
-- **Fast** - efficient file operations with progress indication for large operations
+- **Smart progress indication** - automatic progress bars for large operations with adaptive terminal layouts
 
 ## Installation
 
@@ -103,6 +103,8 @@ Options:
   -n, --dry-run        Show what would be backed up without doing it
   -v, --verbose        Show detailed progress information
   -q, --quiet          Suppress all output except errors
+      --progress       Force progress indication even for small operations
+      --no-progress    Disable progress indication
       --dump-config    Display current configuration settings and exit
   -h, --help           Print help
   -V, --version        Print version
@@ -127,10 +129,58 @@ qbak --verbose my-project/
 # Quiet mode (only errors)
 qbak --quiet *.txt
 
+# Force progress indication for small operations
+qbak --progress single-file.txt
+# Output: Shows progress bar even for small files
+
+# Disable progress indication for large operations
+qbak --no-progress large-directory/
+# Output: No progress bars, even for operations that normally show them
+
 # Check current configuration
 qbak --dump-config
 # Output: Shows config file location, all settings, and example backup names
 ```
+
+## Progress Indication
+
+`qbak` automatically shows progress bars for large backup operations to keep you informed during lengthy transfers.
+
+### Smart Auto-Detection
+
+Progress indication is automatically enabled when operations meet any of these thresholds:
+- **≥50 files** to process
+- **≥10 MB** total data size  
+- Operations taking longer than expected
+
+The progress display adapts to your terminal:
+- **Wide terminals (≥120 cols)**: Full progress with file details, transfer rates, and ETA
+- **Normal terminals (≥80 cols)**: Compact progress with essential information
+- **Narrow terminals**: Minimal progress indication
+
+### Two-Phase Progress
+
+For directory backups, `qbak` shows progress in two phases:
+
+1. **Scanning Phase**: Discovers files and calculates total size
+   ```
+   ⠋ Scanning files... 127 files found, current: photo.jpg
+   ```
+
+2. **Backup Phase**: Copies files with detailed progress
+   ```
+   [████████████████████████████████] 127/127 files (100%) • 45.2 MB/45.2 MB • 12.3 MB/s • ETA: 0s • Processing: document.pdf
+   ```
+
+### Manual Control
+
+- `--progress`: Force progress indication even for small operations
+- `--no-progress`: Disable progress indication entirely
+- Configuration file settings override auto-detection
+
+### Interactive vs Non-Interactive
+
+Progress bars are only shown in interactive terminals. In CI environments, scripts, or when output is redirected, progress indication is automatically disabled to avoid cluttering logs.
 
 ## Naming Scheme
 
@@ -171,6 +221,23 @@ include_hidden = true
 
 # Maximum filename length before showing error (filesystem limit: 255)
 max_filename_length = 255
+
+# Progress indication settings
+[progress]
+# Enable/disable progress indication (true/false)
+enabled = true
+
+# Force progress indication regardless of thresholds (true/false)  
+force_enabled = false
+
+# Minimum number of files to show progress
+min_files_threshold = 50
+
+# Minimum total size to show progress (in bytes)
+min_size_threshold = 10485760  # 10 MB
+
+# Minimum expected duration to show progress (in seconds)
+min_duration_threshold = 2
 ```
 
 ## Safety Features
