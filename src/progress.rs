@@ -59,14 +59,10 @@ impl ProgressConfig {
         }
 
         if self.force_enabled {
-            return self.is_interactive;
+            return true;
         }
 
-        if !self.is_interactive {
-            return false;
-        }
-
-        // Check thresholds
+        // Check thresholds - should show if thresholds are met
         file_count >= self.min_files_threshold || total_size >= self.min_size_threshold
     }
 }
