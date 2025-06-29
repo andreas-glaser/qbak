@@ -366,4 +366,215 @@ mod tests {
         // Just ensure it doesn't panic
         let _is_ci = is_ci_environment();
     }
+
+    // New tests for Progress Display Methods
+    #[test]
+    fn test_start_scanning() {
+        let config = ProgressConfig {
+            enabled: true,
+            supports_ansi: true,
+            is_interactive: true,
+            ..ProgressConfig::default()
+        };
+        let mut progress = BackupProgress::new(config);
+
+        // Initially should be in scanning phase
+        assert!(matches!(progress.phase, ProgressPhase::Scanning));
+        assert!(progress.progress_bar.is_none());
+
+        // Start scanning should create a progress bar
+        progress.start_scanning();
+        assert!(progress.progress_bar.is_some());
+    }
+
+    #[test]
+    fn test_start_scanning_non_interactive() {
+        let config = ProgressConfig {
+            enabled: true,
+            is_interactive: false,
+            ..ProgressConfig::default()
+        };
+        let mut progress = BackupProgress::new(config);
+
+        // Start scanning should not create progress bar for non-interactive
+        progress.start_scanning();
+        assert!(progress.progress_bar.is_none());
+    }
+
+    #[test]
+    fn test_update_scan_progress() {
+        let config = ProgressConfig {
+            enabled: true,
+            supports_ansi: true,
+            is_interactive: true,
+            ..ProgressConfig::default()
+        };
+        let mut progress = BackupProgress::new(config);
+        let test_path = Path::new("/test/file.txt");
+
+        // Test updating scan progress
+        progress.update_scan_progress(5, test_path);
+        assert_eq!(progress.files_processed, 5);
+        assert_eq!(progress.current_file, Some(test_path.to_path_buf()));
+
+        // Test updating with more files
+        progress.update_scan_progress(10, test_path);
+        assert_eq!(progress.files_processed, 10);
+    }
+
+    #[test]
+    fn test_finish_scanning() {
+        let config = ProgressConfig {
+            enabled: true,
+            supports_ansi: true,
+            is_interactive: true,
+            ..ProgressConfig::default()
+        };
+        let mut progress = BackupProgress::new(config);
+
+        // Initially scanning phase
+        assert!(matches!(progress.phase, ProgressPhase::Scanning));
+
+        // Finish scanning should transition to backing phase
+        progress.finish_scanning(100, 1024 * 1024);
+        assert!(matches!(progress.phase, ProgressPhase::Backing));
+        assert_eq!(progress.files_total, Some(100));
+        assert_eq!(progress.bytes_total, Some(1024 * 1024));
+        assert_eq!(progress.files_processed, 0); // Reset for backing phase
+        assert_eq!(progress.bytes_processed, 0); // Reset for backing phase
+    }
+
+    #[test]
+    fn test_update_backup_progress() {
+        let config = ProgressConfig {
+            enabled: true,
+            supports_ansi: true,
+            is_interactive: true,
+            ..ProgressConfig::default()
+        };
+        let mut progress = BackupProgress::new(config);
+        let test_path = Path::new("/test/backup_file.txt");
+
+        // Set up backing phase
+        progress.finish_scanning(100, 1024 * 1024);
+
+        // Update backup progress
+        progress.update_backup_progress(25, 256 * 1024, test_path);
+        assert_eq!(progress.files_processed, 25);
+        assert_eq!(progress.bytes_processed, 256 * 1024);
+        assert_eq!(progress.current_file, Some(test_path.to_path_buf()));
+
+        // Update with more progress
+        progress.update_backup_progress(50, 512 * 1024, test_path);
+        assert_eq!(progress.files_processed, 50);
+        assert_eq!(progress.bytes_processed, 512 * 1024);
+    }
+
+    #[test]
+    fn test_get_progress_style_different_terminal_widths() {
+        // Test that different terminal widths produce valid progress styles
+        // We can't examine the template strings directly, but we can test that
+        // the method works for different terminal configurations
+
+        let wide_config = ProgressConfig {
+            terminal_width: 120,
+            ..ProgressConfig::default()
+        };
+        let wide_progress = BackupProgress::new(wide_config);
+        let _wide_style = wide_progress.get_progress_style(); // Should not panic
+
+        let normal_config = ProgressConfig {
+            terminal_width: 80,
+            ..ProgressConfig::default()
+        };
+        let normal_progress = BackupProgress::new(normal_config);
+        let _normal_style = normal_progress.get_progress_style(); // Should not panic
+
+        let narrow_config = ProgressConfig {
+            terminal_width: 60,
+            ..ProgressConfig::default()
+        };
+        let narrow_progress = BackupProgress::new(narrow_config);
+        let _narrow_style = narrow_progress.get_progress_style(); // Should not panic
+
+        let very_narrow_config = ProgressConfig {
+            terminal_width: 40,
+            ..ProgressConfig::default()
+        };
+        let very_narrow_progress = BackupProgress::new(very_narrow_config);
+        let _very_narrow_style = very_narrow_progress.get_progress_style(); // Should not panic
+    }
+
+    #[test]
+    fn test_format_progress_message_wide_terminal() {
+        let config = ProgressConfig {
+            terminal_width: 120,
+            ..ProgressConfig::default()
+        };
+        let progress = BackupProgress::new(config);
+        let path = Path::new("/some/path/to/myfile.txt");
+
+        let message = progress.format_progress_message(path);
+        assert_eq!(message, "Processing: myfile.txt");
+    }
+
+    #[test]
+    fn test_format_progress_message_narrow_terminal() {
+        let config = ProgressConfig {
+            terminal_width: 60,
+            ..ProgressConfig::default()
+        };
+        let progress = BackupProgress::new(config);
+        let path = Path::new("/some/path/to/very_long_filename_that_should_be_truncated.txt");
+
+        let message = progress.format_progress_message(path);
+        // Should truncate long filename
+        assert!(message.len() <= 20); // Max length for 60-width terminal
+        assert!(message.ends_with("..."));
+    }
+
+    #[test]
+    fn test_format_progress_message_short_filename() {
+        let config = ProgressConfig {
+            terminal_width: 60,
+            ..ProgressConfig::default()
+        };
+        let progress = BackupProgress::new(config);
+        let path = Path::new("/some/path/to/short.txt");
+
+        let message = progress.format_progress_message(path);
+        assert_eq!(message, "short.txt");
+    }
+
+    #[test]
+    fn test_format_progress_message_no_filename() {
+        let config = ProgressConfig {
+            terminal_width: 120,
+            ..ProgressConfig::default()
+        };
+        let progress = BackupProgress::new(config);
+        let path = Path::new("/");
+
+        let message = progress.format_progress_message(path);
+        assert_eq!(message, "Processing: ...");
+    }
+
+    #[test]
+    fn test_finish_clears_progress_bar() {
+        let config = ProgressConfig {
+            enabled: true,
+            supports_ansi: true,
+            is_interactive: true,
+            ..ProgressConfig::default()
+        };
+        let mut progress = BackupProgress::new(config);
+
+        // Start with a progress bar
+        progress.start_scanning();
+        assert!(progress.progress_bar.is_some());
+
+        // Finish should clear the progress bar
+        progress.finish();
+        assert!(progress.progress_bar.is_none());
+    }
 }
