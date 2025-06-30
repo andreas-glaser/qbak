@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::error::QbakError;
 use crate::naming::{generate_backup_name, resolve_collision};
 use crate::progress::{create_progress_bar, BackupProgress};
+use crate::signal::BackupOperationGuard;
 use crate::utils::{
     calculate_size, copy_permissions, copy_timestamps, format_size, is_hidden, validate_source,
 };
@@ -59,6 +60,9 @@ pub fn backup_file(source: &Path, config: &Config) -> Result<BackupResult> {
     let backup_path = generate_backup_name(source, config)?;
     let final_backup_path = resolve_collision(&backup_path)?;
 
+    // Register operation for cleanup tracking
+    let _operation_guard = BackupOperationGuard::new(final_backup_path.clone());
+
     // Calculate size for reporting
     let file_size = calculate_size(source)?;
 
@@ -79,13 +83,18 @@ pub fn backup_file(source: &Path, config: &Config) -> Result<BackupResult> {
 
     let duration = start_time.elapsed();
 
-    Ok(BackupResult {
+    let result = BackupResult {
         source_path: source.to_path_buf(),
         backup_path: final_backup_path,
         files_processed: 1,
         total_size: file_size,
         duration,
-    })
+    };
+
+    // Mark operation as completed (prevents cleanup)
+    _operation_guard.complete();
+
+    Ok(result)
 }
 
 /// Backup a directory recursively
@@ -102,6 +111,9 @@ pub fn backup_directory(source: &Path, config: &Config, verbose: bool) -> Result
     // Generate backup name
     let backup_path = generate_backup_name(source, config)?;
     let final_backup_path = resolve_collision(&backup_path)?;
+
+    // Register operation for cleanup tracking
+    let _operation_guard = BackupOperationGuard::new(final_backup_path.clone());
 
     // Create backup directory
     fs::create_dir_all(&final_backup_path)?;
@@ -139,6 +151,10 @@ pub fn backup_directory(source: &Path, config: &Config, verbose: bool) -> Result
     }
 
     result.duration = start_time.elapsed();
+
+    // Mark operation as completed (prevents cleanup)
+    _operation_guard.complete();
+
     Ok(result)
 }
 
@@ -372,6 +388,9 @@ pub fn backup_directory_with_progress(
     let backup_path = generate_backup_name(source, config)?;
     let final_backup_path = resolve_collision(&backup_path)?;
 
+    // Register operation for cleanup tracking
+    let _operation_guard = BackupOperationGuard::new(final_backup_path.clone());
+
     // First, count files and calculate size (scanning phase)
     let (file_count, total_size) = count_files_and_size(source, config)?;
 
@@ -410,6 +429,9 @@ pub fn backup_directory_with_progress(
 
     let duration = start_time.elapsed();
     result.duration = duration;
+
+    // Mark operation as completed (prevents cleanup)
+    _operation_guard.complete();
 
     Ok(result)
 }
@@ -1086,5 +1108,184 @@ mod tests {
         assert!(result.backup_path.join("small.txt").exists());
         assert!(result.backup_path.join("medium.txt").exists());
         assert!(result.backup_path.join("sub").join("sub_file.txt").exists());
+    }
+
+    #[test]
+    fn test_backup_operation_guard_cleanup_on_panic() {
+        let dir = tempdir().unwrap();
+        let source_path = dir.path().join("test.txt");
+        fs::write(&source_path, "test content").unwrap();
+
+        let config = default_config();
+        let backup_path = generate_backup_name(&source_path, &config).unwrap();
+        let final_backup_path = resolve_collision(&backup_path).unwrap();
+
+        // Simulate operation that panics after creating backup directory
+        let result = std::panic::catch_unwind(|| {
+            let _guard = BackupOperationGuard::new(final_backup_path.clone());
+
+            // Create partial backup to simulate interrupted operation
+            fs::create_dir_all(&final_backup_path).unwrap();
+            fs::write(final_backup_path.join("partial.txt"), "partial").unwrap();
+
+            // Simulate panic/interruption (don't call guard.complete())
+            panic!("Simulated interruption");
+        });
+
+        assert!(result.is_err()); // Panic occurred
+
+        // The guard should have been dropped, but the files remain
+        // (cleanup_active_operations would be called by signal handler)
+        assert!(final_backup_path.exists());
+    }
+
+    #[test]
+    fn test_backup_operation_guard_no_cleanup_on_success() {
+        let dir = tempdir().unwrap();
+        let source_path = dir.path().join("test.txt");
+        fs::write(&source_path, "test content").unwrap();
+
+        let config = default_config();
+        let backup_path = generate_backup_name(&source_path, &config).unwrap();
+        let final_backup_path = resolve_collision(&backup_path).unwrap();
+
+        {
+            let guard = BackupOperationGuard::new(final_backup_path.clone());
+
+            // Create backup successfully
+            fs::create_dir_all(&final_backup_path).unwrap();
+            fs::write(final_backup_path.join("complete.txt"), "complete").unwrap();
+
+            // Mark as completed
+            guard.complete();
+        } // Guard is dropped here, but complete() was called
+
+        // Backup should still exist after successful completion
+        assert!(final_backup_path.exists());
+        assert!(final_backup_path.join("complete.txt").exists());
+    }
+
+    #[test]
+    fn test_signal_cleanup_removes_incomplete_backups() {
+        use crate::signal::get_active_operations;
+
+        let dir = tempdir().unwrap();
+
+        // Create multiple incomplete backup operations
+        let backup1 = dir.path().join("backup1-20250630T123456-qbak");
+        let backup2 = dir.path().join("backup2-20250630T123457-qbak.txt");
+
+        fs::create_dir_all(&backup1).unwrap();
+        fs::write(&backup1.join("partial1.txt"), "content").unwrap();
+        fs::write(&backup2, "partial content").unwrap();
+
+        // Register operations (simulate active backups)
+        let _guard1 = BackupOperationGuard::new(backup1.clone());
+        let _guard2 = BackupOperationGuard::new(backup2.clone());
+
+        // Verify they're tracked and exist
+        let active_ops = get_active_operations();
+        assert!(active_ops.contains(&backup1));
+        assert!(active_ops.contains(&backup2));
+        assert!(backup1.exists());
+        assert!(backup2.exists());
+
+        // Simulate signal handler cleanup
+        use crate::signal::cleanup_active_operations_with_mode;
+        cleanup_active_operations_with_mode(true);
+
+        // Verify they were removed
+        assert!(!backup1.exists());
+        assert!(!backup2.exists());
+
+        // Verify tracking is cleared
+        let remaining_ops = get_active_operations();
+        assert!(remaining_ops.is_empty());
+    }
+
+    #[test]
+    fn test_backup_file_interrupted_simulation() {
+        let dir = tempdir().unwrap();
+        let source_path = dir.path().join("test.txt");
+        fs::write(&source_path, "test content").unwrap();
+
+        let config = default_config();
+        let backup_path = generate_backup_name(&source_path, &config).unwrap();
+        let final_backup_path = resolve_collision(&backup_path).unwrap();
+
+        // Simulate backup_file being interrupted before completion
+        // In real scenario, CTRL+C happens while guard is still active
+        let guard = BackupOperationGuard::new(final_backup_path.clone());
+
+        // Start backup process
+        fs::copy(&source_path, &final_backup_path).unwrap();
+
+        // File exists and operation is tracked
+        assert!(final_backup_path.exists());
+        use crate::signal::get_active_operations;
+        let active_ops = get_active_operations();
+        assert!(active_ops.contains(&final_backup_path));
+
+        // Simulate CTRL+C signal handler being called while guard is still active
+        use crate::signal::cleanup_active_operations_with_mode;
+        cleanup_active_operations_with_mode(true);
+
+        // Now it should be gone
+        assert!(!final_backup_path.exists());
+
+        // Don't call guard.complete() - simulates interruption
+        drop(guard);
+    }
+
+    #[test]
+    fn test_backup_directory_interrupted_simulation() {
+        let dir = tempdir().unwrap();
+        let source_dir = dir.path().join("source");
+        fs::create_dir_all(&source_dir).unwrap();
+
+        // Create several files
+        for i in 1..=5 {
+            fs::write(
+                source_dir.join(format!("file{i}.txt")),
+                format!("content{i}"),
+            )
+            .unwrap();
+        }
+
+        let config = default_config();
+        let backup_path = generate_backup_name(&source_dir, &config).unwrap();
+        let final_backup_path = resolve_collision(&backup_path).unwrap();
+
+        // Simulate directory backup being interrupted partway through
+        // In real scenario, CTRL+C happens while guard is still active
+        let guard = BackupOperationGuard::new(final_backup_path.clone());
+
+        // Start backup process - create directory and copy some files
+        fs::create_dir_all(&final_backup_path).unwrap();
+        fs::write(final_backup_path.join("file1.txt"), "content1").unwrap();
+        fs::write(final_backup_path.join("file2.txt"), "content2").unwrap();
+        // Interrupted before copying file3.txt, file4.txt, file5.txt
+
+        // Partial backup exists and is tracked
+        assert!(final_backup_path.exists());
+        assert!(final_backup_path.join("file1.txt").exists());
+        assert!(final_backup_path.join("file2.txt").exists());
+        assert!(!final_backup_path.join("file3.txt").exists()); // Not copied yet
+
+        use crate::signal::get_active_operations;
+        let active_ops = get_active_operations();
+        assert!(active_ops.contains(&final_backup_path));
+
+        // Simulate CTRL+C signal handler being called while guard is still active
+        use crate::signal::cleanup_active_operations_with_mode;
+        cleanup_active_operations_with_mode(true);
+
+        // Entire backup directory should be gone
+        assert!(!final_backup_path.exists());
+        assert!(!final_backup_path.join("file1.txt").exists());
+        assert!(!final_backup_path.join("file2.txt").exists());
+
+        // Don't call guard.complete() - simulates interruption
+        drop(guard);
     }
 }

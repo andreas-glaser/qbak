@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
+- **Critical**: Fixed incomplete backup cleanup on interruption (CTRL+C)
+  - Partial backup files/directories are now properly removed when operations are interrupted
+  - Implements global operation tracking with RAII-based cleanup guards
+  - Signal handler now cleanups all active backup operations on CTRL+C
+  - Comprehensive test coverage for interruption scenarios and cleanup behavior
+  - Resolves user expectation that "Cleaning up..." message should actually clean up partial backups
 
 ### Changed
 
