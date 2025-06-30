@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Release & Versioning Checklist
+
+PRE-FLIGHT CHECKS
+-----------------
+- Pull latest `main` and `dev`.
+- Run full test/CI suite locally; abort on failure.
+- Update CHANGELOG.md (new version + highlights).
+
+VERSION BUMP
+------------
+- Grep repo (code, docs, CI, Docker, manifests) for old version; replace with new.
+- Commit *only* these edits:  `chore: bump to vX.Y.Z`.
+
+RELEASE WORKFLOW
+----------------
+1. Merge `dev` → `main`.
+2. Tag `main` with annotated tag `vX.Y.Z`; push branch + tag.
+3. Wait for CI on `main`; if green, publish release (use changelog for notes).
+
+POST-RELEASE HOUSEKEEPING
+-------------------------
+1. Checkout `dev`, merge `main` into it.
+2. Bump `dev` to next snapshot (e.g., `vX.Y.(Z+1)-dev`); add empty “Unreleased” section to changelog.
+3. Push `dev`.
+
+QUICK SANITY LIST
+-----------------
+- Docs / README version badges updated.
+- Generated artifacts (e.g., lockfiles) committed.
+- All tags and branches pushed to remote.

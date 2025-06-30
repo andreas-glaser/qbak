@@ -1,5 +1,6 @@
 // Unused imports removed
 use indicatif::{ProgressBar, ProgressStyle};
+use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -22,7 +23,7 @@ impl Default for ProgressConfig {
             force_enabled: false,
             supports_ansi: console::colors_enabled(),
             terminal_width: console::Term::stdout().size().1 as usize,
-            is_interactive: atty::is(atty::Stream::Stdout),
+            is_interactive: std::io::stdout().is_terminal(),
             min_files_threshold: 50,
             min_size_threshold: 10 * 1024 * 1024, // 10 MB
             min_duration_threshold: Duration::from_secs(2),

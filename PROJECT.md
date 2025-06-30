@@ -392,7 +392,7 @@ impl ProgressConfig {
             enabled: !is_ci_environment(),
             supports_ansi: supports_ansi_colors(),
             terminal_width: terminal_width().unwrap_or(80),
-            is_interactive: atty::is(atty::Stream::Stdout),
+            is_interactive: std::io::stdout().is_terminal(),
         }
     }
 }
@@ -599,7 +599,6 @@ qbak --progress --quiet file.txt # --quiet should override --progress
 **Required Crates:**
 * `indicatif = "0.17"` - Cross-platform progress bars and spinners
 * `console = "0.15"` - Terminal capability detection and styling
-* `atty = "0.2"` - TTY detection for interactive vs non-interactive
 
 **Cargo.toml Configuration:**
 ```toml
@@ -607,7 +606,6 @@ qbak --progress --quiet file.txt # --quiet should override --progress
 # ... existing dependencies ...
 indicatif = "0.17"
 console = "0.15"
-atty = "0.2"
 ```
 
 ### Implementation Phases
@@ -697,7 +695,7 @@ qbak --quiet *.log && echo "Logs backed up"
 ## Tech Stack
 
 Language   : Rust (Edition 2021, MSRV 1.71)
-Core Crates: clap · chrono · thiserror · configparser · ctrlc · indicatif · console · atty
+Core Crates: clap · chrono · thiserror · configparser · ctrlc · indicatif · console
 
 **Dependency rationale:**
 * `clap`: Robust CLI parsing with derive macros
@@ -707,7 +705,7 @@ Core Crates: clap · chrono · thiserror · configparser · ctrlc · indicatif �
 * `ctrlc`: Graceful signal handling for interruption
 * `indicatif`: Progress bars and spinners for backup operations
 * `console`: Terminal capability detection and ANSI support
-* `atty`: TTY detection for interactive vs non-interactive environments
+
 
 ## Implementation Architecture
 
