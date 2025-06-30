@@ -10,10 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - TBD
 
 ### Added
-- (Features to be added in 1.3.0)
+- **Advanced Progress Indication System** - Smart, adaptive progress bars for backup operations
+  - Auto-detection: Shows progress for operations with ≥50 files, ≥10 MB data, or long duration
+  - Two-phase progress: Scanning phase (file discovery) + Backup phase (actual copying)  
+  - Adaptive display: Adjusts to terminal width and capabilities
+  - Interactive vs non-interactive detection (disabled in CI environments)
+  - New command line flags:
+    - `--progress`: Force progress indication even for small operations
+    - `--no-progress`: Disable progress indication completely
+  - Configuration file support for progress thresholds and behavior
+  - Cross-platform terminal capability detection and ANSI support
+  - Comprehensive unit test coverage for progress display methods
+
+### Fixed
 
 ### Changed
-- Development version bump to 1.3.0
+- Improved code formatting consistency across the project
 
 ## [1.2.0] - 2025-06-28
 
