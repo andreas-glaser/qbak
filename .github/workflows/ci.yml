@@ -67,13 +67,13 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.rust }}
 
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --verbose -- --test-threads=1
 
       - name: Run tests with all features
-        run: cargo test --verbose --all-features
+        run: cargo test --verbose --all-features -- --test-threads=1
 
       - name: Test release build
-        run: cargo test --verbose --release
+        run: cargo test --verbose --release -- --test-threads=1
 
   # Build binaries for all platforms
   build:
@@ -151,7 +151,7 @@ jobs:
         run: cargo check --all-targets
 
       - name: Test MSRV
-        run: cargo test
+        run: cargo test -- --test-threads=1
 
   # Integration tests with real file operations
   integration:
