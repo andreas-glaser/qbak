@@ -26,7 +26,7 @@ fn main() {
 
 fn run() -> Result<i32, QbakError> {
     let matches = Command::new("qbak")
-        .version("1.3.0")
+        .version("1.3.1")
         .author("Andreas Glaser <andreas.glaser@pm.me>")
         .about("A single-command backup helper for Linux and POSIX systems")
         .long_about(
@@ -255,7 +255,10 @@ fn setup_signal_handlers() {
             interrupted_clone.store(true, Ordering::SeqCst);
             eprintln!("\nInterrupted by user. Cleaning up...");
 
-            // Try to clean up any temporary files
+            // Clean up incomplete backup operations
+            qbak::signal::cleanup_active_operations();
+
+            // Also clean up any temporary files
             if let Ok(current_dir) = std::env::current_dir() {
                 let _ = qbak::backup::cleanup_temp_files(&current_dir);
             }
@@ -474,5 +477,89 @@ mod tests {
         // Test dry run with verbose output
         let result = process_target(&source_path, &config, true, true, false, false);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_signal_handler_cleanup_integration() {
+        use qbak::signal::{get_active_operations, BackupOperationGuard};
+
+        let dir = tempdir().unwrap();
+        let source_path = dir.path().join("test.txt");
+        std::fs::write(&source_path, "test content").unwrap();
+
+        let config = qbak::default_config();
+        let backup_path = qbak::generate_backup_name(&source_path, &config).unwrap();
+        let final_backup_path = qbak::resolve_collision(&backup_path).unwrap();
+
+        // Simulate the exact sequence that happens during a real backup interruption
+        {
+            // This mimics what backup_file() does at the start
+            let _guard = BackupOperationGuard::new(final_backup_path.clone());
+
+            // Simulate partial progress
+            std::fs::copy(&source_path, &final_backup_path).unwrap();
+
+            // Verify operation is tracked
+            let active_ops = get_active_operations();
+            assert!(active_ops.contains(&final_backup_path));
+            assert!(final_backup_path.exists());
+
+            // Simulate CTRL+C signal handler being called
+            qbak::signal::cleanup_active_operations_with_mode(true);
+
+            // Verify cleanup happened
+            assert!(!final_backup_path.exists());
+            let remaining_ops = get_active_operations();
+            assert!(remaining_ops.is_empty());
+
+            // Guard will drop here, but cleanup already happened
+        }
+
+        // Verify final state - no partial backup should remain
+        assert!(!final_backup_path.exists());
+    }
+
+    #[test]
+    fn test_multiple_targets_with_interruption_simulation() {
+        use qbak::signal::BackupOperationGuard;
+
+        let dir = tempdir().unwrap();
+
+        // Create multiple source files
+        let source1 = dir.path().join("file1.txt");
+        let source2 = dir.path().join("file2.txt");
+        std::fs::write(&source1, "content1").unwrap();
+        std::fs::write(&source2, "content2").unwrap();
+
+        let config = qbak::default_config();
+
+        // Generate backup paths
+        let backup1 =
+            qbak::resolve_collision(&qbak::generate_backup_name(&source1, &config).unwrap())
+                .unwrap();
+        let backup2 =
+            qbak::resolve_collision(&qbak::generate_backup_name(&source2, &config).unwrap())
+                .unwrap();
+
+        // Simulate multiple concurrent backup operations being interrupted
+        {
+            let _guard1 = BackupOperationGuard::new(backup1.clone());
+            let _guard2 = BackupOperationGuard::new(backup2.clone());
+
+            // Start both operations
+            std::fs::copy(&source1, &backup1).unwrap();
+            std::fs::copy(&source2, &backup2).unwrap();
+
+            // Verify both exist and are tracked
+            assert!(backup1.exists());
+            assert!(backup2.exists());
+
+            // Simulate signal handler cleanup (CTRL+C)
+            qbak::signal::cleanup_active_operations_with_mode(true);
+
+            // Both should be cleaned up
+            assert!(!backup1.exists());
+            assert!(!backup2.exists());
+        }
     }
 }

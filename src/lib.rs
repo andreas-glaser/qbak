@@ -3,6 +3,7 @@ pub mod config;
 pub mod error;
 pub mod naming;
 pub mod progress;
+pub mod signal;
 pub mod utils;
 
 pub use backup::{
