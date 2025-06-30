@@ -10,14 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Fixed
+
+### Changed
+
+## [1.3.1] - 2025-06-30
+
+### Fixed
 - **Critical**: Fixed incomplete backup cleanup on interruption (CTRL+C)
   - Partial backup files/directories are now properly removed when operations are interrupted
   - Implements global operation tracking with RAII-based cleanup guards
   - Signal handler now cleanups all active backup operations on CTRL+C
   - Comprehensive test coverage for interruption scenarios and cleanup behavior
   - Resolves user expectation that "Cleaning up..." message should actually clean up partial backups
+- Fixed clippy warning for unnecessary borrow in file write operation
+- Fixed CI race conditions in signal handling tests by using single-threaded test execution
+- Improved development workflow by ignoring IDE-specific configuration files
 
-### Changed
+### Internal
+- Enhanced CI pipeline reliability with `--test-threads=1` for consistent test execution
+- Updated git hooks to prevent race conditions in local development
+- Improved development environment setup by excluding `.cursor/` directory from version control
 
 ## [1.3.0] - 2025-06-30
 
@@ -164,7 +176,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Atomic file operations prevent corruption
 - Signal handling for graceful cleanup on interruption
 
-[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/andreas-glaser/qbak/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/andreas-glaser/qbak/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/andreas-glaser/qbak/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/andreas-glaser/qbak/compare/v1.1.2...v1.1.3

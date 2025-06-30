@@ -26,7 +26,7 @@ fn main() {
 
 fn run() -> Result<i32, QbakError> {
     let matches = Command::new("qbak")
-        .version("1.4.0-dev")
+        .version("1.3.1")
         .author("Andreas Glaser <andreas.glaser@pm.me>")
         .about("A single-command backup helper for Linux and POSIX systems")
         .long_about(
