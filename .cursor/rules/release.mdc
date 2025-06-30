@@ -25,7 +25,7 @@ RELEASE WORKFLOW
 POST-RELEASE HOUSEKEEPING
 -------------------------
 1. Checkout `dev`, merge `main` into it.
-2. Bump `dev` to next snapshot (e.g., `vX.Y.(Z+1)-dev`); add empty “Unreleased” section to changelog.
+2. Bump `dev` to next snapshot based on the release version number; add empty “Unreleased” section to changelog.
 3. Push `dev`.
 
 QUICK SANITY LIST
