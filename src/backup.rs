@@ -1176,7 +1176,7 @@ mod tests {
         let backup2 = dir.path().join("backup2-20250630T123457-qbak.txt");
 
         fs::create_dir_all(&backup1).unwrap();
-        fs::write(&backup1.join("partial1.txt"), "content").unwrap();
+        fs::write(backup1.join("partial1.txt"), "content").unwrap();
         fs::write(&backup2, "partial content").unwrap();
 
         // Register operations (simulate active backups)
