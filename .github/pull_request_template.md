@@ -19,7 +19,7 @@ Fixes #(issue number) or closes #(issue number)
 - [ ] Highlight any API changes
 
 ## Testing
-- [ ] All existing tests pass (`cargo test`)
+- [ ] All existing tests pass (`cargo test -- --test-threads=1`)
 - [ ] New tests added for new functionality
 - [ ] Manual testing performed
 - [ ] Cross-platform testing (if relevant)
@@ -27,7 +27,7 @@ Fixes #(issue number) or closes #(issue number)
 ### Test Commands
 ```bash
 # Commands used to test this change
-cargo test
+cargo test -- --test-threads=1
 cargo build --release
 ./target/release/qbak --help
 ```

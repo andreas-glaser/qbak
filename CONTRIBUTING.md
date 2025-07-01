@@ -63,10 +63,10 @@ cd qbak
 cargo build
 
 # Run tests
-cargo test
+cargo test -- --test-threads=1
 
 # Run with verbose output to see all tests
-cargo test -- --nocapture
+cargo test -- --test-threads=1 --nocapture
 ```
 
 ## Code Style
@@ -97,19 +97,19 @@ cargo clippy -- -D warnings
 
 ```bash
 # Run all tests
-cargo test
+cargo test -- --test-threads=1
 
 # Run tests with output
-cargo test -- --nocapture
+cargo test -- --test-threads=1 --nocapture
 
 # Run specific test
-cargo test test_name
+cargo test test_name -- --test-threads=1
 
 # Run tests for specific module
-cargo test backup::
+cargo test backup:: -- --test-threads=1
 
 # Run tests in release mode
-cargo test --release
+cargo test --release -- --test-threads=1
 ```
 
 ### Writing Tests
@@ -168,7 +168,7 @@ Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.md) an
 
 ### Before Submitting
 
-- [ ] All tests pass locally (`cargo test`)
+- [ ] All tests pass locally (`cargo test -- --test-threads=1`)
 - [ ] Code is formatted (`cargo fmt --check`)
 - [ ] No clippy warnings (`cargo clippy -- -D warnings`)
 - [ ] Documentation is updated

@@ -193,7 +193,7 @@ For full functionality, set these GitHub repository secrets:
 2. **Create** feature branch
 3. **Develop** with local testing:
    ```bash
-   cargo test
+   cargo test -- --test-threads=1
    cargo fmt --check
    cargo clippy -- -D warnings
    ```
@@ -261,7 +261,7 @@ Add new benchmarks in `bench.yml`:
 **CI Failures**:
 - Check clippy warnings: `cargo clippy -- -D warnings`
 - Verify formatting: `cargo fmt --check`
-- Run tests locally: `cargo test`
+- Run tests locally: `cargo test -- --test-threads=1`
 
 **Security Audit Failures**:
 - Review advisory database updates

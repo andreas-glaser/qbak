@@ -275,7 +275,7 @@ cargo build
 ### Testing
 
 ```bash
-cargo test
+cargo test -- --test-threads=1
 ```
 
 The project has comprehensive unit tests covering all modules and edge cases.
