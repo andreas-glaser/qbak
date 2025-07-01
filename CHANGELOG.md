@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed signal handling test failures in `create_backup_guard` fallback behavior
 - Global context now properly initialized when no context exists during backup operations
 - Fixed clippy `manual_flatten` warning in test code
+- Fixed CI race conditions by adding `--test-threads=1` to all test jobs including MSRV
 
 ### Changed
 - **Code Quality**: Cleaned up repetitive and verbose comments across codebase
@@ -29,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Internal
 - All 120 tests passing with improved signal handling reliability
 - Maintained code quality standards with clean, concise documentation
+- Enhanced CI pipeline reliability across all Rust versions
 
 ## [1.3.1] - 2025-06-30
 
