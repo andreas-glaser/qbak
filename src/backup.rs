@@ -1080,6 +1080,9 @@ mod tests {
 
     #[test]
     fn test_progress_with_verbose_flag() {
+        // Reset global state for test isolation
+        crate::signal::reset_for_testing();
+
         let temp_dir = tempfile::tempdir().unwrap();
         let source = temp_dir.path().join("source");
 
@@ -1223,6 +1226,9 @@ mod tests {
 
     #[test]
     fn test_backup_file_interrupted_simulation() {
+        // Reset global state for test isolation
+        crate::signal::reset_for_testing();
+
         let dir = tempdir().unwrap();
         let source_path = dir.path().join("test.txt");
         fs::write(&source_path, "test content").unwrap();
@@ -1257,6 +1263,9 @@ mod tests {
 
     #[test]
     fn test_backup_directory_interrupted_simulation() {
+        // Reset global state for test isolation
+        crate::signal::reset_for_testing();
+
         let dir = tempdir().unwrap();
         let source_dir = dir.path().join("source");
         fs::create_dir_all(&source_dir).unwrap();
@@ -1309,6 +1318,9 @@ mod tests {
 
     #[test]
     fn test_interrupt_handling_during_backup() {
+        // Reset global state for test isolation
+        crate::signal::reset_for_testing();
+
         let dir = tempdir().unwrap();
         let source_dir = dir.path().join("source");
         fs::create_dir_all(&source_dir).unwrap();
@@ -1394,6 +1406,9 @@ mod tests {
         use std::sync::{Arc, Mutex};
         use std::thread;
         use std::time::Duration;
+
+        // Reset global state for test isolation
+        crate::signal::reset_for_testing();
 
         let dir = tempdir().unwrap();
         let source_dir = dir.path().join("large_source");
