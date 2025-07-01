@@ -1402,7 +1402,7 @@ mod tests {
         // Create test files for interrupt testing
         for i in 1..=2000 {
             let content = vec![(i % 256) as u8; 512 * 1024]; // 0.5MB with varying pattern
-            fs::write(source_dir.join(format!("file_{:04}.bin", i)), content).unwrap();
+            fs::write(source_dir.join(format!("file_{i:04}.bin")), content).unwrap();
         }
 
         let config = default_config();
