@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed signal handling test failures in `create_backup_guard` fallback behavior
 - Global context now properly initialized when no context exists during backup operations
+- Fixed clippy `manual_flatten` warning in test code
 
 ### Changed
 - **Code Quality**: Cleaned up repetitive and verbose comments across codebase

@@ -1494,30 +1494,28 @@ mod tests {
             let parent_dir = final_backup_path.parent().unwrap();
 
             if let Ok(entries) = fs::read_dir(parent_dir) {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        let path = entry.path();
-                        let filename = path.file_name().unwrap().to_string_lossy();
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    let filename = path.file_name().unwrap().to_string_lossy();
 
-                        // Check for temp files that might have been left behind
-                        if filename.contains(".qbak_temp_") {
-                            panic!("Temp file left behind: {}", path.display());
-                        }
+                    // Check for temp files that might have been left behind
+                    if filename.contains(".qbak_temp_") {
+                        panic!("Temp file left behind: {}", path.display());
+                    }
 
-                        // Check for any partial backup directories (only if interrupted)
-                        if filename.starts_with(
-                            &source_dir
-                                .file_name()
-                                .unwrap()
-                                .to_string_lossy()
-                                .to_string(),
-                        ) && filename.contains("-qbak")
-                        {
-                            panic!(
-                                "Partial backup directory left behind after interrupt: {}",
-                                path.display()
-                            );
-                        }
+                    // Check for any partial backup directories (only if interrupted)
+                    if filename.starts_with(
+                        &source_dir
+                            .file_name()
+                            .unwrap()
+                            .to_string_lossy()
+                            .to_string(),
+                    ) && filename.contains("-qbak")
+                    {
+                        panic!(
+                            "Partial backup directory left behind after interrupt: {}",
+                            path.display()
+                        );
                     }
                 }
             }
