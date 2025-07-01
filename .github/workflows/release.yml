@@ -154,7 +154,7 @@ jobs:
           echo "✅ Version check passed: $CARGO_VERSION"
 
       - name: Run tests before publish
-        run: cargo test --all-features -- --test-threads=1
+        run: cargo test --all-features
 
       - name: Publish to crates.io
         run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}

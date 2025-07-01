@@ -19,6 +19,16 @@ fn main() {
                 }
             }
 
+            // If this was an interrupted operation, clean up partial backups before exit
+            if matches!(error, QbakError::Interrupted) {
+                qbak::signal::cleanup_active_operations();
+
+                // Also clean up any temporary files
+                if let Ok(current_dir) = std::env::current_dir() {
+                    let _ = qbak::backup::cleanup_temp_files(&current_dir);
+                }
+            }
+
             process::exit(error.exit_code());
         }
     }
@@ -245,27 +255,20 @@ fn setup_signal_handlers() {
     // Set up signal handlers for graceful cleanup
     #[cfg(unix)]
     {
-        use std::sync::atomic::{AtomicBool, Ordering};
-        use std::sync::Arc;
+        use std::sync::atomic::Ordering;
 
-        let interrupted = Arc::new(AtomicBool::new(false));
-        let interrupted_clone = interrupted.clone();
+        // Create a new backup context for this qbak instance
+        let context = qbak::signal::BackupContext::new();
+        let interrupt_flag = context.interrupt_flag();
 
         ctrlc::set_handler(move || {
-            interrupted_clone.store(true, Ordering::SeqCst);
-            eprintln!("\nInterrupted by user. Cleaning up...");
-
-            // Clean up incomplete backup operations
-            qbak::signal::cleanup_active_operations();
-
-            // Also clean up any temporary files
-            if let Ok(current_dir) = std::env::current_dir() {
-                let _ = qbak::backup::cleanup_temp_files(&current_dir);
-            }
-
-            process::exit(130);
+            interrupt_flag.store(true, Ordering::SeqCst);
+            eprintln!("\nInterrupt signal received. Requesting graceful shutdown...");
         })
         .expect("Error setting Ctrl-C handler");
+
+        // Set the global context for this qbak instance
+        qbak::signal::set_global_context(context);
     }
 }
 
@@ -481,7 +484,7 @@ mod tests {
 
     #[test]
     fn test_signal_handler_cleanup_integration() {
-        use qbak::signal::{get_active_operations, BackupOperationGuard};
+        use qbak::signal::get_active_operations;
 
         let dir = tempdir().unwrap();
         let source_path = dir.path().join("test.txt");
@@ -494,7 +497,7 @@ mod tests {
         // Simulate the exact sequence that happens during a real backup interruption
         {
             // This mimics what backup_file() does at the start
-            let _guard = BackupOperationGuard::new(final_backup_path.clone());
+            let _guard = qbak::signal::create_backup_guard(final_backup_path.clone());
 
             // Simulate partial progress
             std::fs::copy(&source_path, &final_backup_path).unwrap();
@@ -521,8 +524,6 @@ mod tests {
 
     #[test]
     fn test_multiple_targets_with_interruption_simulation() {
-        use qbak::signal::BackupOperationGuard;
-
         let dir = tempdir().unwrap();
 
         // Create multiple source files
@@ -543,8 +544,8 @@ mod tests {
 
         // Simulate multiple concurrent backup operations being interrupted
         {
-            let _guard1 = BackupOperationGuard::new(backup1.clone());
-            let _guard2 = BackupOperationGuard::new(backup2.clone());
+            let _guard1 = qbak::signal::create_backup_guard(backup1.clone());
+            let _guard2 = qbak::signal::create_backup_guard(backup2.clone());
 
             // Start both operations
             std::fs::copy(&source1, &backup1).unwrap();

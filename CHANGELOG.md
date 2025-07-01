@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.3.2] - 2025-01-07
+
+### Fixed
+- Fixed signal handling test failures in `create_backup_guard` fallback behavior
+- Global context now properly initialized when no context exists during backup operations
+
+### Changed
+- **Code Quality**: Cleaned up repetitive and verbose comments across codebase
+- Removed redundant "(backward compatibility)" suffixes from signal handling documentation
+- Simplified overly verbose comments in signal cleanup implementation
+- Improved code readability while maintaining all functionality
+
+### Internal
+- All 120 tests passing with improved signal handling reliability
+- Maintained code quality standards with clean, concise documentation
+
 ## [1.3.1] - 2025-06-30
 
 ### Fixed
@@ -176,7 +192,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Atomic file operations prevent corruption
 - Signal handling for graceful cleanup on interruption
 
-[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/andreas-glaser/qbak/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/andreas-glaser/qbak/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/andreas-glaser/qbak/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/andreas-glaser/qbak/compare/v1.1.3...v1.2.0

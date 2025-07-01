@@ -49,7 +49,7 @@ qbak photos/            → photos-20250603T145232-qbak/
 * **NEVER delete source files** - Source files remain untouched under all circumstances
 * **NEVER overwrite existing files** - Auto-increment backup names to prevent collisions
 * **NEVER partially corrupt** - Either complete operation succeeds or fails cleanly
-* **NEVER leave partial backups** - Clean up incomplete operations on failure/interruption
+* **NEVER leave partial backups** - Clean up incomplete operations on failure/interruption to prevent confusion or false expectations that the backup completed
 
 **Collision Handling:**
 ```bash
@@ -185,7 +185,7 @@ OPTIONS:
 * **Insufficient disk space**: Pre-check available space; fail before starting if inadequate
 * **Permission denied**: Skip inaccessible files with warning; continue with others
 * **Network/special filesystems**: Handle gracefully with appropriate error messages
-* **Interrupted operations**: Clean up any partial backups on Ctrl+C or kill signals
+* **Interrupted operations**: Clean up any partial backups on Ctrl+C or kill signals to ensure users don't mistakenly believe a backup was completed
 * **Invalid targets**: Show clear error messages for non-existent or invalid paths
 * **Large operations**: Provide progress indication for operations taking >2 seconds
 * **Filename length exceeded**: Fail with helpful error showing maximum length and suggestions
@@ -260,7 +260,8 @@ qbak --dry-run photos/
 
 * **Memory usage**: Stream large files; avoid loading entire contents into memory
 * **Progress indication**: Show progress for directories with >100 files or operations >2s
-* **Parallel processing**: Sequential processing for simplicity and safety
+* **Parallel processing**: Sequential processing within each qbak instance for simplicity and safety
+* **Multiple instances**: qbak can be executed in parallel - each process is isolated and operates independently
 * **Large files**: Handle files up to available disk space; no arbitrary size limits
 * **Checksums**: No integrity verification in v1.0 (keep it simple)
 
