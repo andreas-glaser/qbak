@@ -447,15 +447,26 @@ pub fn backup_directory_with_progress(
     let mut result = BackupResult::new(source.to_path_buf(), final_backup_path.clone());
 
     // Copy contents with progress tracking
-    copy_directory_contents_with_progress(
+    let copy_result = copy_directory_contents_with_progress(
         source,
         &final_backup_path,
         config,
         &mut result,
         &mut progress.as_mut(),
-    )?;
+    );
 
-    // Finish progress
+    // If interrupted, clear progress bar immediately
+    if let Err(QbakError::Interrupted) = copy_result {
+        if let Some(ref mut prog) = progress {
+            prog.finish();
+        }
+        return Err(QbakError::Interrupted);
+    }
+
+    // Handle other errors
+    copy_result?;
+
+    // Finish progress normally
     if let Some(ref mut prog) = progress {
         prog.finish();
     }

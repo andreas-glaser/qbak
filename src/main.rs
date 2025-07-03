@@ -263,7 +263,7 @@ fn setup_signal_handlers() {
 
         ctrlc::set_handler(move || {
             interrupt_flag.store(true, Ordering::SeqCst);
-            eprintln!("\nInterrupt signal received. Requesting graceful shutdown...");
+            eprintln!("\nInterrupted by user.");
         })
         .expect("Error setting Ctrl-C handler");
 
@@ -508,7 +508,7 @@ mod tests {
             assert!(final_backup_path.exists());
 
             // Simulate CTRL+C signal handler being called
-            qbak::signal::cleanup_active_operations_with_mode(true);
+            qbak::signal::cleanup_active_operations();
 
             // Verify cleanup happened
             assert!(!final_backup_path.exists());
@@ -556,7 +556,7 @@ mod tests {
             assert!(backup2.exists());
 
             // Simulate signal handler cleanup (CTRL+C)
-            qbak::signal::cleanup_active_operations_with_mode(true);
+            qbak::signal::cleanup_active_operations();
 
             // Both should be cleaned up
             assert!(!backup1.exists());
