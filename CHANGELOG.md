@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.3.3] - 2025-07-03
+
+### Fixed
+- **Progress Display**: Fixed progress bar appearing after CTRL+C interruption
+  - Progress bar now immediately clears when interrupt is detected during backup operations
+  - Improved signal handler messaging for cleaner interruption experience
+  - User now sees clean sequence: interrupt message → error → cleanup confirmation
+  - Resolves confusing display where progress bar updated after "Interrupted by user" message
+
 ## [1.3.2] - 2025-01-07
 
 ### Fixed
@@ -195,7 +204,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Atomic file operations prevent corruption
 - Signal handling for graceful cleanup on interruption
 
-[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.3.3...HEAD
+[1.3.3]: https://github.com/andreas-glaser/qbak/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/andreas-glaser/qbak/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/andreas-glaser/qbak/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/andreas-glaser/qbak/compare/v1.2.0...v1.3.0
