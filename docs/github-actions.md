@@ -41,6 +41,8 @@ The qbak project uses 5 main GitHub Actions workflows:
 **Build Targets**:
 - `x86_64-unknown-linux-gnu`
 - `x86_64-unknown-linux-musl`
+- `aarch64-unknown-linux-gnu`
+- `aarch64-unknown-linux-musl`
 - `x86_64-apple-darwin`
 - `aarch64-apple-darwin`
 - `x86_64-pc-windows-msvc`
@@ -87,6 +89,8 @@ The qbak project uses 5 main GitHub Actions workflows:
 **Artifacts Created**:
 - `qbak-linux-x86_64.tar.gz`
 - `qbak-linux-x86_64-musl.tar.gz`
+- `qbak-linux-arm64.tar.gz`
+- `qbak-linux-arm64-musl.tar.gz`
 - `qbak-macos-x86_64.tar.gz`
 - `qbak-macos-arm64.tar.gz`
 - `qbak-windows-x86_64.zip`
