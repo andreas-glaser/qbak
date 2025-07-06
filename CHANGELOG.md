@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.4.1] - 2025-07-06
+
+### Added
+- **ARMv7l Linux Support** - Added native ARMv7l Linux builds for older ARM devices
+  - New release target: `armv7-unknown-linux-gnueabihf`
+  - Cross-compilation support with proper ARMv7 GCC toolchain configuration
+  - Automatic CI/CD pipeline builds for ARMv7l Linux targets
+  - New release artifact: `qbak-linux-armv7l.tar.gz` - ARMv7l Linux (dynamically linked with glibc)
+  - Perfect for Raspberry Pi 2/3, older ARM devices, and ARMv7 single-board computers
+
+### Changed
+- **CI/CD Pipeline** - Enhanced GitHub Actions workflows to build and test ARMv7l Linux targets
+- **Documentation** - Updated README to include ARMv7l Linux installation instructions
+- **Release Process** - Expanded release artifacts from 7 to 8 supported platforms
+
 ## [1.4.0] - 2025-01-14
 
 ### Added
