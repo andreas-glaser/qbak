@@ -56,6 +56,8 @@ qbak --version
 **Available releases:**
 - `qbak-linux-x86_64.tar.gz` - Linux x86_64 (glibc)
 - `qbak-linux-x86_64-musl.tar.gz` - Linux x86_64 (musl, static binary)
+- `qbak-linux-arm64.tar.gz` - Linux ARM64 (glibc, for Raspberry Pi 4/5, ARM64 servers)
+- `qbak-linux-arm64-musl.tar.gz` - Linux ARM64 (musl, static binary)
 - `qbak-macos-x86_64.tar.gz` - macOS x86_64 (Intel)
 - `qbak-macos-arm64.tar.gz` - macOS ARM64 (Apple Silicon)
 - `qbak-windows-x86_64.zip` - Windows x86_64

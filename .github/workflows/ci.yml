@@ -221,7 +221,7 @@ jobs:
           ./target/release/qbak --help | grep "qbak"
 
           # Test version
-          ./target/release/qbak --version | grep "qbak 1.3.3"
+          ./target/release/qbak --version | grep "qbak 1.4.0"
 
           echo "✅ All integration tests passed!"
 

@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.4.0] - 2025-01-14
+
+### Added
+- **ARM64 Linux Support** - Added native ARM64 Linux builds for better performance on ARM-based systems
+  - New release targets: `aarch64-unknown-linux-gnu` and `aarch64-unknown-linux-musl`
+  - Cross-compilation support with proper ARM64 GCC toolchain configuration
+  - Automatic CI/CD pipeline builds for ARM64 Linux targets
+  - New release artifacts:
+    - `qbak-linux-arm64.tar.gz` - ARM64 Linux (dynamically linked with glibc)
+    - `qbak-linux-arm64-musl.tar.gz` - ARM64 Linux (statically linked with musl)
+  - Perfect for Raspberry Pi 4/5, ARM64 servers, and Apple Silicon machines running Linux
+
+### Changed
+- **CI/CD Pipeline** - Enhanced GitHub Actions workflows to build and test ARM64 Linux targets
+- **Documentation** - Updated README and documentation to include ARM64 Linux installation instructions
+- **Release Process** - Expanded release artifacts from 5 to 7 supported platforms
+
 ## [1.3.3] - 2025-07-03
 
 ### Fixed
@@ -204,7 +221,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Atomic file operations prevent corruption
 - Signal handling for graceful cleanup on interruption
 
-[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.3.3...HEAD
+[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/andreas-glaser/qbak/compare/v1.3.3...v1.4.0
 [1.3.3]: https://github.com/andreas-glaser/qbak/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/andreas-glaser/qbak/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/andreas-glaser/qbak/compare/v1.3.0...v1.3.1
