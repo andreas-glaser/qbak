@@ -71,6 +71,9 @@ jobs:
           - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
             name: qbak-linux-arm64-musl
+          - target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest
+            name: qbak-linux-armv7l
           - target: x86_64-apple-darwin
             os: macos-latest
             name: qbak-macos-x86_64
@@ -107,11 +110,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
+      - name: Install ARMv7 cross-compilation tools
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf
+
       - name: Configure cross-compilation (ARM64 Linux)
         if: contains(matrix.target, 'aarch64-unknown-linux')
         run: |
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+
+      - name: Configure cross-compilation (ARMv7 Linux)
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+        run: |
+          echo "CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -123,7 +137,14 @@ jobs:
 
       - name: Strip binary (Unix)
         if: matrix.os != 'windows-latest'
-        run: strip target/${{ matrix.target }}/release/qbak
+        run: |
+          if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]] || [[ "${{ matrix.target }}" == "aarch64-unknown-linux-musl" ]]; then
+            aarch64-linux-gnu-strip target/${{ matrix.target }}/release/qbak
+          elif [[ "${{ matrix.target }}" == "armv7-unknown-linux-gnueabihf" ]]; then
+            arm-linux-gnueabihf-strip target/${{ matrix.target }}/release/qbak
+          else
+            strip target/${{ matrix.target }}/release/qbak
+          fi
 
       - name: Create archive (Unix)
         if: matrix.os != 'windows-latest'
