@@ -18,7 +18,7 @@ chrono = { version = "0.4", features = ["serde"] }
 configparser = "3.0"
 thiserror = "1.0"
 ctrlc = "3.0"
-indicatif = "0.17"
+indicatif = "0.18"
 console = "0.16"
 
 [dev-dependencies]
