@@ -1,6 +1,6 @@
 use crate::error::QbakError;
 use crate::Result;
-use fs4::statvfs;
+use fs2::available_space;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use std::collections::HashSet;
@@ -221,13 +221,9 @@ fn get_available_space(path: &Path) -> Result<u64> {
         current.to_path_buf()
     };
 
-    // Get filesystem statistics using statvfs
-    match statvfs(&existing_dir) {
-        Ok(stat) => {
-            // Calculate available space using the correct fs4 API
-            let available_bytes = stat.available_space();
-            Ok(available_bytes)
-        }
+    // Get filesystem statistics using fs2
+    match available_space(&existing_dir) {
+        Ok(available_bytes) => Ok(available_bytes),
         Err(e) => {
             // If we can't get space info, log a warning but don't fail
             // This maintains backwards compatibility

@@ -21,7 +21,7 @@ ctrlc = "3.0"
 indicatif = "0.18"
 console = "0.16"
 rand = "0.8"
-fs4 = "0.8"
+fs2 = "0.4"
 
 [dev-dependencies]
 tempfile = "3.0"
