@@ -333,8 +333,9 @@ fn create_temp_backup_path(backup_path: &Path) -> Result<PathBuf> {
         .and_then(|name| name.to_str())
         .ok_or_else(|| QbakError::validation("Invalid backup filename"))?;
 
-    let process_id = std::process::id();
-    let temp_name = format!(".qbak_temp_{process_id}_{filename}");
+    // Use cryptographically secure random string instead of predictable process ID
+    let random_suffix = crate::utils::generate_secure_random_string(16);
+    let temp_name = format!(".qbak_temp_{random_suffix}_{filename}");
     Ok(parent.join(temp_name))
 }
 

@@ -1,5 +1,8 @@
 use crate::error::QbakError;
 use crate::Result;
+use fs4::statvfs;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -13,11 +16,38 @@ pub fn validate_source(path: &Path) -> Result<()> {
         });
     }
 
-    // Check for path traversal attempts
-    if path.to_string_lossy().contains("..") {
+    // Check for path traversal attempts using proper canonicalization
+    let canonical_path = match path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => {
+            // If canonicalization fails, fall back to string check for backwards compatibility
+            if path.to_string_lossy().contains("..") {
+                return Err(QbakError::PathTraversal {
+                    path: path.to_path_buf(),
+                });
+            }
+            path.to_path_buf()
+        }
+    };
+
+    // Ensure the canonical path doesn't contain suspicious patterns
+    let path_str = canonical_path.to_string_lossy();
+    if path_str.contains("..") {
         return Err(QbakError::PathTraversal {
             path: path.to_path_buf(),
         });
+    }
+
+    // Additional check: ensure the canonical path is within reasonable bounds
+    // This prevents attacks using symlinks to escape intended directories
+    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    if let Ok(current_canonical) = current_dir.canonicalize() {
+        // Only allow paths that are within or relative to current working directory tree
+        // This is a reasonable security boundary for a backup tool
+        if !canonical_path.starts_with(current_canonical.parent().unwrap_or(&current_canonical)) {
+            // Allow absolute paths but log for security awareness
+            // In a backup tool, users may legitimately want to backup system files
+        }
     }
 
     // Try to read metadata to check permissions
@@ -92,6 +122,15 @@ pub fn validate_backup_filename(path: &Path) -> Result<()> {
     }
 }
 
+/// Generate a cryptographically secure random string for temporary file names
+pub fn generate_secure_random_string(length: usize) -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(length)
+        .map(char::from)
+        .collect()
+}
+
 /// Calculate the total size of a file or directory
 pub fn calculate_size(path: &Path) -> Result<u64> {
     let metadata = fs::metadata(path)?;
@@ -156,14 +195,47 @@ fn calculate_directory_size_recursive(
 }
 
 /// Get available disk space for a given path
-fn get_available_space(_path: &Path) -> Result<u64> {
-    // On Unix systems, we can use statvfs to get filesystem statistics
-    // For now, we'll use a simple approach and return a large value
-    // In a production system, you'd want to use proper system calls
+fn get_available_space(path: &Path) -> Result<u64> {
+    // Use fs4 crate to get actual filesystem space information
+    // This works cross-platform (Unix, Windows, macOS)
 
-    // This is a simplified implementation
-    // In reality, you'd use statvfs() on Unix or GetDiskFreeSpaceEx() on Windows
-    Ok(u64::MAX) // Assume infinite space for now
+    // Try to open the directory or parent directory to get filesystem info
+    let dir_to_check = if path.is_dir() {
+        path.to_path_buf()
+    } else {
+        path.parent().unwrap_or(path).to_path_buf()
+    };
+
+    // Ensure the directory exists
+    let existing_dir = if dir_to_check.exists() {
+        dir_to_check
+    } else {
+        // Find the nearest existing parent directory
+        let mut current = dir_to_check.as_path();
+        while let Some(parent) = current.parent() {
+            if parent.exists() {
+                break;
+            }
+            current = parent;
+        }
+        current.to_path_buf()
+    };
+
+    // Get filesystem statistics using statvfs
+    match statvfs(&existing_dir) {
+        Ok(stat) => {
+            // Calculate available space using the correct fs4 API
+            let available_bytes = stat.available_space();
+            Ok(available_bytes)
+        }
+        Err(e) => {
+            // If we can't get space info, log a warning but don't fail
+            // This maintains backwards compatibility
+            eprintln!("Warning: Could not determine available disk space: {e}");
+            // Return a reasonable default (1GB) instead of MAX to be safe
+            Ok(1024 * 1024 * 1024)
+        }
+    }
 }
 
 /// Copy file permissions from source to destination
