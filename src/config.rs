@@ -656,14 +656,16 @@ max_filename_length = not_a_number
         let result = load_config();
         // The configparser is quite tolerant, but invalid UTF-8 should fail
         // If it doesn't fail, that's actually fine - just means robust parsing
-        if result.is_err() {
-            // Good - caught the malformed file
-        } else {
-            // Parser is very robust - that's actually fine for a backup tool
-            // Just verify it returns default values when it can't parse sections
-            let config = result.unwrap();
-            let default = default_config();
-            assert_eq!(config.timestamp_format, default.timestamp_format);
+        match result {
+            Err(_) => {
+                // Good - caught the malformed file
+            }
+            Ok(config) => {
+                // Parser is very robust - that's actually fine for a backup tool
+                // Just verify it returns default values when it can't parse sections
+                let default = default_config();
+                assert_eq!(config.timestamp_format, default.timestamp_format);
+            }
         }
 
         // Restore original environment
