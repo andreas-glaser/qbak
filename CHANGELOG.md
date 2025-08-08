@@ -13,6 +13,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.5.0] - 2025-08-08
+
+### Added
+- **Symlink Depth Limits** - New `max_symlink_depth` configuration option (default: 32) to prevent excessive symlink traversal attacks
+- **Cross-platform Filesystem Space Checking** - Real disk space validation using fs2 crate to prevent disk exhaustion attacks
+- **Cryptographically Secure Temporary Files** - Replaced predictable process ID-based naming with secure random 16-character strings
+- **Enhanced Configuration** - New symlink depth configuration in sample config and configuration parsing
+
+### Security
+- **🔒 Path Traversal Protection Enhanced** - Implemented proper path canonicalization to prevent sophisticated directory traversal attempts
+- **🔒 Temporary File Race Condition Prevention** - Secure random temporary file naming eliminates predictable file creation attacks  
+- **🔒 Disk Exhaustion Attack Prevention** - Actual filesystem space checking prevents malicious disk space exhaustion
+- **🔒 Symlink Attack Mitigation** - Configurable depth limits prevent excessive symlink traversal exploitation
+
+### Fixed
+- **MSRV Compatibility** - Replaced fs4 dependency with fs2 to maintain Rust 1.71.0 compatibility
+- **Dependency Security** - Updated to secure, MSRV-compatible filesystem libraries
+
+### Changed
+- **Dependencies** - Added `rand 0.8` for cryptographically secure random generation
+- **Dependencies** - Added `fs2 0.4` for cross-platform filesystem operations (replacing fs4)
+- **Security Posture** - Comprehensive security hardening across all file operations
+- **Configuration Schema** - Extended with security-focused options
+
+### Technical
+- **120 Tests** - All existing functionality preserved with comprehensive test coverage
+- **Backwards Compatibility** - All configuration defaults maintain existing behavior
+- **Performance** - Security improvements implemented with minimal performance impact
+- **Cross-platform** - Enhanced security features work across Linux, macOS, and Windows
+
 ## [1.4.1] - 2025-07-06
 
 ### Added
@@ -236,7 +266,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Atomic file operations prevent corruption
 - Signal handling for graceful cleanup on interruption
 
-[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/andreas-glaser/qbak/compare/v1.4.1...v1.5.0
+[1.4.1]: https://github.com/andreas-glaser/qbak/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/andreas-glaser/qbak/compare/v1.3.3...v1.4.0
 [1.3.3]: https://github.com/andreas-glaser/qbak/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/andreas-glaser/qbak/compare/v1.3.1...v1.3.2

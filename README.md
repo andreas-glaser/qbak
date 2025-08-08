@@ -27,6 +27,7 @@ That's exactly where `qbak` comes in. It's a super simple tool designed for ligh
 
 - **Zero-config** - runs with sensible defaults; no config files required
 - **Safe & atomic** - never overwrite existing data; fail loudly on errors
+- **Security-hardened** - comprehensive protection against path traversal, disk exhaustion, and race condition attacks
 - **Cross-platform** - primary target is Linux; works on macOS and Windows (WSL) too
 - **Tiny static binary** - single executable with no dependencies
 - **Smart progress indication** - automatic progress bars for large operations with adaptive terminal layouts

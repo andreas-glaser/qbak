@@ -3,3 +3,4 @@
 .cursor/
 target/
 Cargo.lock
+CLAUDE.md

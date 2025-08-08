@@ -13,6 +13,7 @@ pub struct Config {
     pub follow_symlinks: bool,
     pub include_hidden: bool,
     pub max_filename_length: usize,
+    pub max_symlink_depth: usize,
     pub progress: ProgressConfig,
 }
 
@@ -25,6 +26,7 @@ impl Default for Config {
             follow_symlinks: true,
             include_hidden: true,
             max_filename_length: 255,
+            max_symlink_depth: 32, // Reasonable default to prevent excessive traversal
             progress: ProgressConfig::auto_detect(),
         }
     }
@@ -73,6 +75,11 @@ pub fn load_config() -> Result<Config> {
         config.max_filename_length = value
             .parse()
             .map_err(|_| QbakError::config(format!("Invalid max_filename_length: {value}")))?;
+    }
+    if let Some(value) = conf.get("qbak", "max_symlink_depth") {
+        config.max_symlink_depth = value
+            .parse()
+            .map_err(|_| QbakError::config(format!("Invalid max_symlink_depth: {value}")))?;
     }
 
     // Load progress configuration
@@ -154,6 +161,9 @@ include_hidden = true
 
 # Maximum filename length before showing error
 max_filename_length = 255
+
+# Maximum symlink depth to follow (security feature)
+max_symlink_depth = 32
 
 [progress]
 # Enable/disable progress indication (can be overridden by command line flags)
@@ -646,14 +656,16 @@ max_filename_length = not_a_number
         let result = load_config();
         // The configparser is quite tolerant, but invalid UTF-8 should fail
         // If it doesn't fail, that's actually fine - just means robust parsing
-        if result.is_err() {
-            // Good - caught the malformed file
-        } else {
-            // Parser is very robust - that's actually fine for a backup tool
-            // Just verify it returns default values when it can't parse sections
-            let config = result.unwrap();
-            let default = default_config();
-            assert_eq!(config.timestamp_format, default.timestamp_format);
+        match result {
+            Err(_) => {
+                // Good - caught the malformed file
+            }
+            Ok(config) => {
+                // Parser is very robust - that's actually fine for a backup tool
+                // Just verify it returns default values when it can't parse sections
+                let default = default_config();
+                assert_eq!(config.timestamp_format, default.timestamp_format);
+            }
         }
 
         // Restore original environment
@@ -691,6 +703,7 @@ max_filename_length = not_a_number
         assert!(sample.contains("follow_symlinks"));
         assert!(sample.contains("include_hidden"));
         assert!(sample.contains("max_filename_length"));
+        assert!(sample.contains("max_symlink_depth"));
         println!("{sample}");
 
         // Verify it's valid INI by parsing it
