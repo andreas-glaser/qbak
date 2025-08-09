@@ -120,7 +120,7 @@ jobs:
           fi
           
           # Convert string JSON objects to actual JSON and create matrix
-          matrix_json=$(printf '%s\n' "${matrix_items[@]}" | jq -r . | jq -s '{"include": .}')
+          matrix_json=$(printf '%s\n' "${matrix_items[@]}" | jq -r -c . | jq -s -c '{"include": .}')
           echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
           
           echo "Selected platforms: $platforms"
@@ -194,15 +194,30 @@ jobs:
         run: |
           if [ -n "${{ secrets.VIRUSTOTAL_API_KEY }}" ]; then
             echo "Uploading ${{ matrix.name }}.exe to VirusTotal..."
-            curl --request POST \
-              --url https://www.virustotal.com/vtapi/v2/file/scan \
-              --header "apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}" \
-              --form "file=@target/${{ matrix.target }}/${{ inputs.build_type }}/qbak.exe" \
-              --form "filename=${{ matrix.name }}.exe" > vt_response.json
-            cat vt_response.json
-            echo "VirusTotal scan initiated. Check results at: https://www.virustotal.com/gui/file/$(jq -r '.sha256' vt_response.json 2>/dev/null || echo 'unknown')"
+            response=$(curl --silent --request POST \
+              --url https://www.virustotal.com/api/v3/files \
+              --header "x-apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}" \
+              --form "file=@target/${{ matrix.target }}/${{ inputs.build_type }}/qbak.exe")
+            
+            echo "VirusTotal Response:"
+            echo "$response" | jq .
+            
+            # Extract analysis ID and provide link
+            if echo "$response" | jq -e '.data.id' >/dev/null 2>&1; then
+              analysis_id=$(echo "$response" | jq -r '.data.id')
+              echo "✅ VirusTotal scan initiated successfully"
+              echo "📊 Analysis ID: $analysis_id"
+              echo "🔗 Check results at: https://www.virustotal.com/gui/file-analysis/$analysis_id"
+            elif echo "$response" | jq -e '.error' >/dev/null 2>&1; then
+              error_code=$(echo "$response" | jq -r '.error.code // "unknown"')
+              error_message=$(echo "$response" | jq -r '.error.message // "unknown"')
+              echo "❌ VirusTotal API Error: $error_code - $error_message"
+            else
+              echo "❓ Unexpected response format from VirusTotal"
+            fi
           else
-            echo "VirusTotal API key not configured, skipping scan"
+            echo "ℹ️  VirusTotal API key not configured, skipping scan"
+            echo "To enable VirusTotal scanning, add VIRUSTOTAL_API_KEY to GitHub secrets"
           fi
         shell: bash
 
