@@ -1,0 +1,267 @@
+name: Manual Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build (comma-separated)'
+        required: true
+        default: 'linux-x86_64,windows-x86_64'
+        type: choice
+        options:
+          - 'linux-x86_64'
+          - 'linux-x86_64-musl'
+          - 'linux-arm64'
+          - 'linux-arm64-musl'
+          - 'linux-armv7l'
+          - 'macos-x86_64'
+          - 'macos-arm64'
+          - 'windows-x86_64'
+          - 'linux-x86_64,windows-x86_64'
+          - 'linux-x86_64,linux-x86_64-musl,linux-arm64,linux-arm64-musl'
+          - 'macos-x86_64,macos-arm64'
+          - 'all'
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - 'debug'
+          - 'release'
+      run_tests:
+        description: 'Run tests before building'
+        required: true
+        default: true
+        type: boolean
+      upload_virustotal:
+        description: 'Upload Windows binaries to VirusTotal'
+        required: true
+        default: false
+        type: boolean
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Pre-build checks
+  pre-build:
+    name: Pre-build Checks
+    runs-on: ubuntu-latest
+    if: ${{ inputs.run_tests }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: cargo test --verbose -- --test-threads=1
+
+  # Dynamic platform selection
+  setup:
+    name: Setup Build Matrix
+    runs-on: ubuntu-latest
+    needs: [pre-build]
+    if: always() && (needs.pre-build.result == 'success' || needs.pre-build.result == 'skipped')
+    outputs:
+      matrix: ${{ steps.setup.outputs.matrix }}
+    steps:
+      - name: Setup build matrix
+        id: setup
+        run: |
+          platforms="${{ inputs.platforms }}"
+          
+          # Define all available targets
+          declare -A targets=(
+            ["linux-x86_64"]='{"target": "x86_64-unknown-linux-gnu", "os": "ubuntu-latest", "name": "qbak-linux-x86_64"}'
+            ["linux-x86_64-musl"]='{"target": "x86_64-unknown-linux-musl", "os": "ubuntu-latest", "name": "qbak-linux-x86_64-musl"}'
+            ["linux-arm64"]='{"target": "aarch64-unknown-linux-gnu", "os": "ubuntu-latest", "name": "qbak-linux-arm64"}'
+            ["linux-arm64-musl"]='{"target": "aarch64-unknown-linux-musl", "os": "ubuntu-latest", "name": "qbak-linux-arm64-musl"}'
+            ["linux-armv7l"]='{"target": "armv7-unknown-linux-gnueabihf", "os": "ubuntu-latest", "name": "qbak-linux-armv7l"}'
+            ["macos-x86_64"]='{"target": "x86_64-apple-darwin", "os": "macos-latest", "name": "qbak-macos-x86_64"}'
+            ["macos-arm64"]='{"target": "aarch64-apple-darwin", "os": "macos-latest", "name": "qbak-macos-arm64"}'
+            ["windows-x86_64"]='{"target": "x86_64-pc-windows-msvc", "os": "windows-latest", "name": "qbak-windows-x86_64", "ext": ".exe"}'
+          )
+          
+          # Handle 'all' option
+          if [ "$platforms" = "all" ]; then
+            platforms="linux-x86_64,linux-x86_64-musl,linux-arm64,linux-arm64-musl,linux-armv7l,macos-x86_64,macos-arm64,windows-x86_64"
+          fi
+          
+          # Build matrix
+          matrix_items=()
+          IFS=',' read -ra PLATFORM_ARRAY <<< "$platforms"
+          for platform in "${PLATFORM_ARRAY[@]}"; do
+            platform=$(echo "$platform" | xargs) # trim whitespace
+            if [[ -n "${targets[$platform]}" ]]; then
+              matrix_items+=("${targets[$platform]}")
+            else
+              echo "Warning: Unknown platform '$platform', skipping"
+            fi
+          done
+          
+          # Create JSON matrix
+          matrix_json=$(printf '%s\n' "${matrix_items[@]}" | jq -s '{"include": .}')
+          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+          
+          echo "Selected platforms: $platforms"
+          echo "Matrix: $matrix_json"
+
+  # Build binaries
+  build:
+    name: Build ${{ matrix.name }}
+    needs: [setup]
+    strategy:
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools (Linux musl only)
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get install -y musl-tools
+
+      - name: Install ARM64 musl tools (ARM64 musl only)
+        if: matrix.target == 'aarch64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
+
+      - name: Install ARM64 cross-compilation tools
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Install ARMv7 cross-compilation tools
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf
+
+      - name: Configure cross-compilation (ARM64 Linux)
+        if: contains(matrix.target, 'aarch64-unknown-linux')
+        run: |
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+
+      - name: Configure cross-compilation (ARMv7 Linux)
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+        run: |
+          echo "CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc" >> $GITHUB_ENV
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: manual-${{ matrix.target }}-${{ inputs.build_type }}
+
+      - name: Build binary (debug)
+        if: inputs.build_type == 'debug'
+        run: cargo build --target ${{ matrix.target }}
+
+      - name: Build binary (release)
+        if: inputs.build_type == 'release'
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload to VirusTotal (Windows only)
+        if: matrix.os == 'windows-latest' && inputs.upload_virustotal && inputs.build_type == 'release'
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.VIRUSTOTAL_API_KEY }}" ]; then
+            echo "Uploading ${{ matrix.name }}.exe to VirusTotal..."
+            curl --request POST \
+              --url https://www.virustotal.com/vtapi/v2/file/scan \
+              --header "apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}" \
+              --form "file=@target/${{ matrix.target }}/${{ inputs.build_type }}/qbak.exe" \
+              --form "filename=${{ matrix.name }}.exe" > vt_response.json
+            cat vt_response.json
+            echo "VirusTotal scan initiated. Check results at: https://www.virustotal.com/gui/file/$(jq -r '.sha256' vt_response.json 2>/dev/null || echo 'unknown')"
+          else
+            echo "VirusTotal API key not configured, skipping scan"
+          fi
+        shell: bash
+
+      - name: Strip binary (Unix release builds only)
+        if: matrix.os != 'windows-latest' && inputs.build_type == 'release'
+        run: |
+          if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]] || [[ "${{ matrix.target }}" == "aarch64-unknown-linux-musl" ]]; then
+            aarch64-linux-gnu-strip target/${{ matrix.target }}/release/qbak
+          elif [[ "${{ matrix.target }}" == "armv7-unknown-linux-gnueabihf" ]]; then
+            arm-linux-gnueabihf-strip target/${{ matrix.target }}/release/qbak
+          else
+            strip target/${{ matrix.target }}/release/qbak
+          fi
+
+      - name: Create archive (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/${{ inputs.build_type }}
+          tar czf ../../../${{ matrix.name }}-${{ inputs.build_type }}.tar.gz qbak
+          cd ../../..
+
+      - name: Create archive (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/${{ inputs.build_type }}
+          7z a ../../../${{ matrix.name }}-${{ inputs.build_type }}.zip qbak.exe
+          cd ../../..
+
+      - name: Upload binary artifact (Unix)
+        if: matrix.os != 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-${{ inputs.build_type }}
+          path: ${{ matrix.name }}-${{ inputs.build_type }}.tar.gz
+          retention-days: 30
+
+      - name: Upload binary artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-${{ inputs.build_type }}
+          path: ${{ matrix.name }}-${{ inputs.build_type }}.zip
+          retention-days: 30
+
+  # Summary
+  summary:
+    name: Build Summary
+    needs: [build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## Manual Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** ${{ inputs.platforms }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Type:** ${{ inputs.build_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tests:** ${{ inputs.run_tests }}" >> $GITHUB_STEP_SUMMARY
+          echo "**VirusTotal:** ${{ inputs.upload_virustotal }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.build.result }}" = "success" ]; then
+            echo "✅ **All builds completed successfully!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📦 **Artifacts are available for download for 30 days**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Some builds failed. Check the logs above.**" >> $GITHUB_STEP_SUMMARY
+          fi
