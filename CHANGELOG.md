@@ -13,6 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.5.1] - 2025-08-09
+
+### Fixed
+- **Windows Defender False Positives** - Modified release profile to reduce false positive detections
+  - Changed LTO from `true` to `"thin"` for less aggressive optimization
+  - Disabled binary stripping (`strip = false`) to preserve debug symbols
+  - Restored default `codegen-units = 16` and `panic = "unwind"` behavior
+  - These changes reduce heuristic triggers that flag legitimate Rust binaries as malicious
+
+### Added
+- **VirusTotal Integration** - Automatic malware scanning in CI/CD pipeline
+  - Windows binaries are automatically uploaded to VirusTotal during release builds
+  - Early detection of false positives before distribution
+  - Requires `VIRUSTOTAL_API_KEY` GitHub secret configuration
+  - Scanning failures don't block releases (`continue-on-error: true`)
+
+### Technical
+- **Release Profile Optimization** - Balanced approach between performance and compatibility
+- **CI/CD Enhancement** - Proactive security scanning for Windows builds
+- **Backwards Compatibility** - All functionality preserved with conservative optimizations
+
 ## [1.5.0] - 2025-08-08
 
 ### Added
@@ -266,7 +287,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Atomic file operations prevent corruption
 - Signal handling for graceful cleanup on interruption
 
-[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/andreas-glaser/qbak/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/andreas-glaser/qbak/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/andreas-glaser/qbak/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/andreas-glaser/qbak/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/andreas-glaser/qbak/compare/v1.3.3...v1.4.0

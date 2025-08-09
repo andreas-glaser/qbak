@@ -1,6 +1,6 @@
 [package]
 name = "qbak"
-version = "1.6.0"
+version = "1.5.1"
 edition = "2021"
 rust-version = "1.71"
 authors = ["Andreas Glaser <andreas.glaser@pm.me>"]
@@ -30,10 +30,10 @@ tempfile = "3.0"
 default = []
 
 [profile.release]
-lto = true
-strip = true
-codegen-units = 1
-panic = "abort"
+lto = "thin"
+strip = false
+codegen-units = 16
+panic = "unwind"
 
 [[bin]]
 name = "qbak"

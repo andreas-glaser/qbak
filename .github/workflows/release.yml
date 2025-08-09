@@ -135,6 +135,24 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
+      - name: Upload to VirusTotal (Windows only)
+        if: matrix.os == 'windows-latest'
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.VIRUSTOTAL_API_KEY }}" ]; then
+            echo "Uploading ${{ matrix.name }}.exe to VirusTotal..."
+            curl --request POST \
+              --url https://www.virustotal.com/vtapi/v2/file/scan \
+              --header "apikey: ${{ secrets.VIRUSTOTAL_API_KEY }}" \
+              --form "file=@target/${{ matrix.target }}/release/qbak.exe" \
+              --form "filename=${{ matrix.name }}.exe" > vt_response.json
+            cat vt_response.json
+            echo "VirusTotal scan initiated. Check results at: https://www.virustotal.com/gui/file/$(jq -r '.sha256' vt_response.json 2>/dev/null || echo 'unknown')"
+          else
+            echo "VirusTotal API key not configured, skipping scan"
+          fi
+        shell: bash
+
       - name: Strip binary (Unix)
         if: matrix.os != 'windows-latest'
         run: |
