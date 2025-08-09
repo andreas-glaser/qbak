@@ -37,7 +37,7 @@ on:
       upload_virustotal:
         description: 'Upload Windows binaries to VirusTotal'
         required: true
-        default: false
+        default: true
         type: boolean
 
 env:
@@ -183,7 +183,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Upload to VirusTotal (Windows only)
-        if: matrix.os == 'windows-latest' && inputs.upload_virustotal && inputs.build_type == 'release'
+        if: matrix.os == 'windows-latest' && inputs.upload_virustotal
         continue-on-error: true
         run: |
           if [ -n "${{ secrets.VIRUSTOTAL_API_KEY }}" ]; then
