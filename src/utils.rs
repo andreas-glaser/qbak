@@ -1,8 +1,8 @@
 use crate::error::QbakError;
 use crate::Result;
 use fs2::available_space;
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
+use rand::distr::Alphanumeric;
+use rand::{rng, Rng};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -124,7 +124,7 @@ pub fn validate_backup_filename(path: &Path) -> Result<()> {
 
 /// Generate a cryptographically secure random string for temporary file names
 pub fn generate_secure_random_string(length: usize) -> String {
-    thread_rng()
+    rng()
         .sample_iter(&Alphanumeric)
         .take(length)
         .map(char::from)
