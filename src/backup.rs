@@ -786,7 +786,7 @@ mod tests {
         // Create a file with the same timestamp pattern to force collision
         let backup_name = result1.backup_path.file_name().unwrap().to_str().unwrap();
         let collision_path = dir.path().join(backup_name);
-        File::create(&collision_path).unwrap();
+        File::create(collision_path).unwrap();
 
         // This should work because resolve_collision will handle it
         // Note: In real usage, this is less likely due to timestamp precision
@@ -967,7 +967,7 @@ mod tests {
             // Create a symlink to the regular file
             let target = source_dir.join("regular.txt");
             let link = source_dir.join("link.txt");
-            symlink(&target, &link).unwrap();
+            symlink(target, link).unwrap();
 
             // Test with follow_symlinks = true (default)
             let mut config = default_config();

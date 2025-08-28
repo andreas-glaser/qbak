@@ -384,7 +384,7 @@ follow_symlinks = false
 include_hidden = false
 max_filename_length = 100
 "#;
-        fs::write(&config_path, config_content).unwrap();
+        fs::write(config_path.clone(), config_content).unwrap();
 
         // Clear and set environment variables for clean test environment
         #[cfg(not(target_os = "windows"))]
@@ -450,7 +450,7 @@ max_filename_length = 100
         let config_content = r#"[qbak]
 backup_suffix = custom
 "#;
-        fs::write(&config_path, config_content).unwrap();
+        fs::write(config_path.clone(), config_content).unwrap();
 
         // Clear and set environment variables for clean test environment
         #[cfg(not(target_os = "windows"))]
@@ -521,7 +521,7 @@ preserve_permissions = maybe
 follow_symlinks = invalid
 include_hidden = not_a_boolean
 "#;
-        fs::write(&config_path, config_content).unwrap();
+        fs::write(config_path.clone(), config_content).unwrap();
 
         // Clear and set environment variables for clean test environment
         #[cfg(not(target_os = "windows"))]
@@ -584,7 +584,7 @@ include_hidden = not_a_boolean
         let config_content = r#"[qbak]
 max_filename_length = not_a_number
 "#;
-        fs::write(&config_path, config_content).unwrap();
+        fs::write(config_path.clone(), config_content).unwrap();
 
         // Clear and set environment variables for clean test environment
         #[cfg(not(target_os = "windows"))]
@@ -642,7 +642,7 @@ max_filename_length = not_a_number
 
         // Create binary/invalid content that should definitely fail
         let config_content = vec![0u8, 159u8, 146u8, 150u8]; // Invalid UTF-8 bytes
-        fs::write(&config_path, config_content).unwrap();
+        fs::write(config_path.clone(), config_content).unwrap();
 
         // Clear and set environment variables for clean test environment
         #[cfg(not(target_os = "windows"))]
@@ -709,7 +709,7 @@ max_filename_length = not_a_number
         // Verify it's valid INI by parsing it
         let dir = tempdir().unwrap();
         let config_path = dir.path().join("sample.ini");
-        fs::write(&config_path, &sample).unwrap();
+        fs::write(config_path.clone(), &sample).unwrap();
 
         let mut conf = Ini::new();
         assert!(conf.load(&config_path).is_ok());
@@ -738,7 +738,7 @@ max_filename_length = not_a_number
 [other_section]
 some_key = some_value
 "#;
-        fs::write(&config_path, config_content).unwrap();
+        fs::write(config_path.clone(), config_content).unwrap();
 
         // Clear and set environment variables for clean test environment
         #[cfg(not(target_os = "windows"))]

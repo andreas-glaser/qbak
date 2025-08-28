@@ -9,6 +9,12 @@ use std::path::{Path, PathBuf};
 
 /// Validate that a source path exists and is readable
 pub fn validate_source(path: &Path) -> Result<()> {
+    // Explicitly reject any parent directory traversal components
+    if path.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+        return Err(QbakError::PathTraversal {
+            path: path.to_path_buf(),
+        });
+    }
     // Check if path exists
     if !path.exists() {
         return Err(QbakError::SourceNotFound {
@@ -222,7 +228,7 @@ fn get_available_space(path: &Path) -> Result<u64> {
     };
 
     // Get filesystem statistics using fs2
-    match available_space(&existing_dir) {
+    match available_space(existing_dir) {
         Ok(available_bytes) => Ok(available_bytes),
         Err(e) => {
             // If we can't get space info, log a warning but don't fail
@@ -497,7 +503,7 @@ mod tests {
 
         #[cfg(unix)]
         {
-            std::os::unix::fs::symlink(&target, &link).unwrap();
+            std::os::unix::fs::symlink(target, link.clone()).unwrap();
 
             // Should return the size of the symlink itself, not the target
             let size = calculate_size(&link).unwrap();

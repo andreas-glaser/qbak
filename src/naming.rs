@@ -187,7 +187,7 @@ mod tests {
 
         // Should contain timestamp and suffix, no extension
         assert!(backup_name.contains("-qbak"));
-        assert!(!backup_name.contains("."));
+        assert!(!backup_name.contains('.'));
         assert!(backup_name.starts_with("makefile-"));
     }
 
@@ -201,12 +201,12 @@ mod tests {
         assert_eq!(resolved, base_path);
 
         // Create the file to force collision
-        File::create(&base_path).unwrap();
+        File::create(base_path.clone()).unwrap();
         let resolved = resolve_collision(&base_path).unwrap();
         assert_eq!(resolved, dir.path().join("test-20250101T120000-qbak-1.txt"));
 
         // Create that too
-        File::create(&resolved).unwrap();
+        File::create(resolved.clone()).unwrap();
         let resolved2 = resolve_collision(&base_path).unwrap();
         assert_eq!(
             resolved2,
