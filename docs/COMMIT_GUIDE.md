@@ -11,6 +11,10 @@ git diff
 git diff --staged
 ```
 
+Use these to inventory exactly what changed. Make sure your commit
+subject and body accurately reflect the diff: what changed, why it
+was needed, and any notable side‑effects.
+
 2) Run code quality checks (choose one)
 ```bash
 # Using Docker tools (no local Rust needed)
@@ -34,6 +38,24 @@ git add -p
 4) Create commit
 ```bash
 git commit -m "<type>(<scope>): <short description>"
+```
+
+Write a clear message that matches the actual changes you saw in
+`git status`/`git diff`:
+- Subject: what changed (≤ 72 chars, imperative mood)
+- Body: why it changed and how you implemented it
+- Impact: user‑visible behavior, risks, perf, security, or docs
+
+Helpful template:
+```
+<type>(<scope>): <short, imperative summary>
+
+What: concise summary of the change
+Why: motivation, context, links to issues/PRs
+How: key implementation details and trade‑offs
+
+Fixes #123  # or: Refs #123
+BREAKING CHANGE: <description if applicable>
 ```
 
 5) Verify CI

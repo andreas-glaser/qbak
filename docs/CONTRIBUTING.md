@@ -143,7 +143,7 @@ mod tests {
 
 ### Bug Reports
 
-Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) and include:
+Use the [bug report template](../.github/ISSUE_TEMPLATE/bug_report.md) and include:
 - Clear reproduction steps
 - Expected vs actual behavior
 - Environment details (OS, filesystem, file types)
@@ -151,7 +151,7 @@ Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) and include:
 
 ### Feature Requests
 
-Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.md) and consider:
+Use the [feature request template](../.github/ISSUE_TEMPLATE/feature_request.md) and consider:
 - Does this align with qbak's goal of being a simple backup tool?
 - Is this cross-platform compatible?
 - What are the security implications?
@@ -176,7 +176,7 @@ Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.md) an
 
 ### PR Requirements
 
-- Use the [pull request template](.github/pull_request_template.md)
+- Use the [pull request template](../.github/pull_request_template.md)
 - Link to related issues
 - Provide clear description of changes
 - Include test results

@@ -8,9 +8,9 @@ The qbak project uses 5 main GitHub Actions workflows:
 
 | Workflow | Purpose | Triggers | Badge |
 |----------|---------|----------|-------|
-| **CI** | Main testing and building | Push/PR to main | [![CI](https://github.com/andreas-glaser/qbak/workflows/CI/badge.svg)](https://github.com/andreas-glaser/qbak/actions/workflows/ci.yml) |
-| **Security** | Security auditing | Push/PR + weekly | [![Security](https://github.com/andreas-glaser/qbak/workflows/Security/badge.svg)](https://github.com/andreas-glaser/qbak/actions/workflows/security.yml) |
-| **Documentation** | Docs building/checking | Push/PR to main | [![Documentation](https://github.com/andreas-glaser/qbak/workflows/Documentation/badge.svg)](https://github.com/andreas-glaser/qbak/actions/workflows/docs.yml) |
+| **CI** | Main testing and building | Push/PR to main, dev (and feature/* pushes) | [![CI](https://github.com/andreas-glaser/qbak/workflows/CI/badge.svg)](https://github.com/andreas-glaser/qbak/actions/workflows/ci.yml) |
+| **Security** | Security auditing | Push/PR to main, dev + weekly | [![Security](https://github.com/andreas-glaser/qbak/workflows/Security/badge.svg)](https://github.com/andreas-glaser/qbak/actions/workflows/security.yml) |
+| **Documentation** | Docs building/checking | Push/PR to main, dev | [![Documentation](https://github.com/andreas-glaser/qbak/workflows/Documentation/badge.svg)](https://github.com/andreas-glaser/qbak/actions/workflows/docs.yml) |
 | **Release** | Automated releases | Version tags | - |
 | **Benchmarks** | Performance testing | Push/PR + manual | - |
 
@@ -21,7 +21,7 @@ The qbak project uses 5 main GitHub Actions workflows:
 **Purpose**: Main continuous integration pipeline
 
 **Jobs**:
-- **Check**: Code formatting, clippy lints, documentation
+- **Check**: Code formatting, clippy lints, documentation (fails on fmt/clippy warnings)
 - **Test**: Cross-platform testing (Linux, macOS, Windows)
 - **Build**: Build binaries for all target platforms
 - **MSRV**: Minimum Supported Rust Version check (1.71.0)
@@ -195,8 +195,12 @@ For full functionality, set these GitHub repository secrets:
 
 1. **Fork** the repository
 2. **Create** feature branch
-3. **Develop** with local testing:
+3. **Develop** with local testing (or Docker tools):
    ```bash
+   # Docker (preferred for consistency)
+   make -C tools/docker pre-commit
+
+   # Or locally
    cargo test -- --test-threads=1
    cargo fmt --check
    cargo clippy -- -D warnings
@@ -207,7 +211,7 @@ For full functionality, set these GitHub repository secrets:
 ### For Maintainers
 
 1. **Review** PR (automated checks must pass)
-2. **Merge** PR to main
+2. **Merge** PR to dev (active development branch)
 3. **Create** release tag when ready:
    ```bash
    git tag v1.0.1
@@ -282,4 +286,4 @@ Add new benchmarks in `bench.yml`:
 - Update outdated examples
 - Check spelling with custom dictionary
 
-For additional help, see the [Contributing Guide](../CONTRIBUTING.md) or open an issue. 
+For additional help, see the [Contributing Guide](CONTRIBUTING.md) or open an issue. 
