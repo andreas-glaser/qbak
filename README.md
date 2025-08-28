@@ -17,6 +17,8 @@ qbak example.txt        → example-20250603T145231-qbak.txt
 qbak photos/            → photos-20250603T145232-qbak/
 ```
 
+For development without a local Rust install, see the Docker dev environment in the Development section.
+
 ## Why qbak?
 
 Have you ever found yourself editing important files or directories and wanting to create a quick local backup first? You know the routine: `cp myconfig.conf backup-myconfig.conf` or something similar. But then you realize your backup naming lacks consistency-no timestamps, no predictable convention, just ad-hoc names that become meaningless over time.
@@ -54,15 +56,15 @@ cp qbak ~/.local/bin/
 qbak --version
 ```
 
-**Available releases:**
-- `qbak-linux-x86_64.tar.gz` - Linux x86_64 (glibc)
-- `qbak-linux-x86_64-musl.tar.gz` - Linux x86_64 (musl, static binary)
-- `qbak-linux-arm64.tar.gz` - Linux ARM64 (glibc, for Raspberry Pi 4/5, ARM64 servers)
-- `qbak-linux-arm64-musl.tar.gz` - Linux ARM64 (musl, static binary)
-- `qbak-linux-armv7l.tar.gz` - Linux ARMv7l (glibc, for Raspberry Pi 2/3, ARMv7 devices)
-- `qbak-macos-x86_64.tar.gz` - macOS x86_64 (Intel)
-- `qbak-macos-arm64.tar.gz` - macOS ARM64 (Apple Silicon)
-- `qbak-windows-x86_64.zip` - Windows x86_64
+See the Releases page for all platforms and artifacts.
+
+### Via Cargo
+
+Install from source using Cargo (requires Rust 1.71+):
+
+```bash
+cargo install qbak
+```
 
 ### From Source
 
@@ -76,6 +78,7 @@ sudo cp target/release/qbak /usr/bin/
 ### Prerequisites
 
 - Rust 1.71 or later (for building from source)
+- MSRV: Rust 1.71
 
 ## Usage
 
@@ -268,6 +271,34 @@ min_duration_threshold = 2
 
 ## Development
 
+### Docker Dev Environment
+
+No local Rust needed. Requires Docker + Docker Compose.
+
+```bash
+cd tools/docker
+
+# Run all checks (format, lint, test)
+./qbak-docker.sh pre-commit
+
+# Interactive shell with Rust 1.71
+./qbak-docker.sh dev
+
+# Build release (musl static)
+./qbak-docker.sh build
+```
+
+Alternatively, using Make:
+
+```bash
+make -C tools/docker pre-commit
+make -C tools/docker build
+```
+
+Notes:
+- Uses project's Rust version (1.71) by default.
+- Caches Cargo in a Docker volume for faster builds.
+
 ### Building
 
 ```bash
@@ -290,7 +321,7 @@ The project has comprehensive unit tests covering all modules and edge cases.
 cargo build --release
 ```
 
-This creates an optimized binary at `target/release/qbak` (~849KB).
+This creates an optimized binary at `target/release/qbak`.
 
 ## License
 

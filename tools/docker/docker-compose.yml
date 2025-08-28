@@ -1,0 +1,26 @@
+name: qbak
+
+services:
+  qbak:
+    build:
+      context: ../..
+      dockerfile: tools/docker/Dockerfile
+      target: development
+      args:
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+        RUST_VERSION: ${RUST_VERSION:-1.71}
+    volumes:
+      - ../..:/workspace:rw
+      - cargo-cache:/home/developer/.cargo:rw
+    working_dir: /workspace
+    command: bash -l
+    environment:
+      - CARGO_HOME=/home/developer/.cargo
+      - RUST_BACKTRACE=1
+      - CARGO_TERM_COLOR=always
+    stdin_open: true
+    tty: true
+
+volumes:
+  cargo-cache:
