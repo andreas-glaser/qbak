@@ -10,7 +10,10 @@ use std::path::{Path, PathBuf};
 /// Validate that a source path exists and is readable
 pub fn validate_source(path: &Path) -> Result<()> {
     // Explicitly reject any parent directory traversal components
-    if path.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+    if path
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
         return Err(QbakError::PathTraversal {
             path: path.to_path_buf(),
         });
