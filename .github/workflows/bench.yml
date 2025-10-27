@@ -164,7 +164,7 @@ jobs:
           fi
 
       - name: Upload benchmark report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: benchmark-report
           path: benchmark-report.md
@@ -235,7 +235,7 @@ jobs:
           rm -f test_file_rsync_backup.bin
 
       - name: Upload comparison report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: comparison-report
           path: comparison-report.md

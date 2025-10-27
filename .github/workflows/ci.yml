@@ -150,7 +150,7 @@ jobs:
 
       - name: Upload binary (Unix)
         if: matrix.os != 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: qbak-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/qbak
@@ -158,7 +158,7 @@ jobs:
 
       - name: Upload binary (Windows)
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: qbak-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/qbak.exe
