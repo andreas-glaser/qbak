@@ -37,7 +37,7 @@ jobs:
         run: cargo audit --json > audit-report.json
 
       - name: Upload audit report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: security-audit-report
@@ -147,7 +147,7 @@ jobs:
           cargo license --json | jq -r '.[] | "- \(.name) \(.version): \(.license)"' >> license-report.md
 
       - name: Upload license report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: license-report
           path: license-report.md
@@ -181,7 +181,7 @@ jobs:
           echo '```' >> unsafe-report.md
 
       - name: Upload unsafe code report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: unsafe-code-report
           path: unsafe-report.md
@@ -213,7 +213,7 @@ jobs:
           echo "Dependency tree generated with licenses"
 
       - name: Upload dependency analysis
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dependency-analysis
           path: dependency-tree.txt
@@ -270,7 +270,7 @@ jobs:
           ldd "$BINARY" >> binary-analysis.md || echo "Static binary (no dynamic dependencies)" >> binary-analysis.md
 
       - name: Upload binary analysis
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: binary-analysis
           path: binary-analysis.md
